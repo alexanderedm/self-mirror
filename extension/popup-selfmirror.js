@@ -7,7 +7,7 @@
 // Config
 // ---------------------------------------------------------------------------
 const DEFAULT_HOST = "127.0.0.1";
-const DEFAULT_PORT = 8421;
+const DEFAULT_PORT = 8400;
 const ENDPOINT_KEY = "selfmirror_backend_endpoint";
 const TIER_KEY = "selfmirror_privacy_tier";
 

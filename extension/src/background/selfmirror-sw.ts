@@ -34,7 +34,7 @@ const PRIVACY_TIER_KEY = "selfmirror_privacy_tier";
 const EVENT_BUFFER_KEY = "selfmirror_event_buffer";
 const BACKEND_ENDPOINT_KEY = "selfmirror_backend_endpoint";
 
-const DEFAULT_PORT = 8421;
+const DEFAULT_PORT = 8400;
 const DEFAULT_HOST = "127.0.0.1";
 
 const TIER_OFF = "off";
