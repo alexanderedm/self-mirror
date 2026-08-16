@@ -27,13 +27,13 @@ SelfMirror is a privacy-first psychological profiling agent built on OpenBiliCla
 pip install -e ".[dev]"
 
 # 啟動後端
-openbiliclaw serve-api
+selfmirror serve-api
 
 # 掃描本地 AI 工具對話並生成初始畫像
-openbiliclaw init
+selfmirror init
 
 # 開始對鏡對話
-openbiliclaw mirror
+selfmirror mirror
 ```
 
 ## API 端點
@@ -49,7 +49,7 @@ GET  /api/mirror/privacy-status  # 隱私狀態
 
 ## 與 OpenBiliClaw 的關係
 
-SelfMirror fork 自 [OpenBiliClaw](https://github.com/whiteguo233/OpenBiliClaw) 的 `refactor/self-mirror` 分支，並在 `src/openbiliclaw/self_mirror/` 下新增了完全獨立的功能模組：
+SelfMirror fork 自 [OpenBiliClaw](https://github.com/whiteguo233/OpenBiliClaw) 的 `refactor/self-mirror` 分支，並在 `src/selfmirror/self_mirror/` 下新增了完全獨立的功能模組：
 
 - 所有 OpenBiliClaw 原有功能（內容發現、推薦、對話）保持不變
 - SelfMirror 只依賴 `soul/`、`memory/`、`llm/` 三個核心子系統

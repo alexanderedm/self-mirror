@@ -41,7 +41,7 @@ from fastapi.responses import (
 )
 from starlette.background import BackgroundTask
 
-from openbiliclaw.api.models import (
+from selfmirror.api.models import (
     ActivityFeedItemOut,
     ActivityFeedResponse,
     AutostartApplyIn,
@@ -189,36 +189,36 @@ from openbiliclaw.api.models import (
     ZhihuSourceConfigOut,
     validate_saved_item_key,
 )
-from openbiliclaw.discovery.temporal import (
+from selfmirror.discovery.temporal import (
     evaluate_temporal_eligibility,
     is_complete_temporal_evidence_marker,
 )
-from openbiliclaw.llm.base import safe_llm_failure_message
-from openbiliclaw.runtime import embedding_progress
-from openbiliclaw.runtime.dialogue_reply_scheduler import (
+from selfmirror.llm.base import safe_llm_failure_message
+from selfmirror.runtime import embedding_progress
+from selfmirror.runtime.dialogue_reply_scheduler import (
     DialogueExecutionCoordinator,
     DurableChatReplyScheduler,
     TerminalChatReplyError,
 )
-from openbiliclaw.runtime.event_ingress import EventIngressService
-from openbiliclaw.runtime.feedback_scheduler import FeedbackBatchScheduler
-from openbiliclaw.runtime.image_cache import (
+from selfmirror.runtime.event_ingress import EventIngressService
+from selfmirror.runtime.feedback_scheduler import FeedbackBatchScheduler
+from selfmirror.runtime.image_cache import (
     CoverFetchError,
     cleanup_image_cache,
     image_log_identity,
     save_extension_cover,
 )
-from openbiliclaw.runtime.image_fetch import ImageFetchCoordinator
-from openbiliclaw.runtime.keyword_fetch import (
+from selfmirror.runtime.image_fetch import ImageFetchCoordinator
+from selfmirror.runtime.keyword_fetch import (
     mark_keyword_terminal_from_xhs_task,
     requeue_keyword_from_xhs_rate_limit,
     source_keyword_id_from_xhs_task,
 )
-from openbiliclaw.saved_sync.extension_broker import (
+from selfmirror.saved_sync.extension_broker import (
     ExtensionNativeSaveResultIn as BrokerExtensionNativeSaveResultIn,
 )
-from openbiliclaw.saved_sync.identity import make_item_key
-from openbiliclaw.saved_sync.models import (
+from selfmirror.saved_sync.identity import make_item_key
+from selfmirror.saved_sync.models import (
     NATIVE_SAVE_STATUSES,
     NativeSaveResult,
     NativeSaveStatus,
@@ -226,27 +226,27 @@ from openbiliclaw.saved_sync.models import (
     SavedListKind,
     SavedSyncBatchResult,
 )
-from openbiliclaw.soul.dislike_writeback import (
+from selfmirror.soul.dislike_writeback import (
     apply_new_dislikes,
     topics_for_confirmed_avoidance,
 )
-from openbiliclaw.sources.platforms import (
+from selfmirror.sources.platforms import (
     CANONICAL_SOURCE_FAMILIES,
     normalize_source_platform,
     overseas_network_hint,
     requires_overseas_network,
 )
-from openbiliclaw.sources.platforms import (
+from selfmirror.sources.platforms import (
     infer_source_platform_from_url as _registry_infer_source_platform_from_url,
 )
-from openbiliclaw.storage.database import CONTENT_HISTORY_RETENTION_DAYS
+from selfmirror.storage.database import CONTENT_HISTORY_RETENTION_DAYS
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
 
-    from openbiliclaw.api.source_auth.contract import SourceAuthContract
-    from openbiliclaw.api.source_auth.write import CredentialWriteOutcome
-    from openbiliclaw.soul.dialogue_learn_queue import (
+    from selfmirror.api.source_auth.contract import SourceAuthContract
+    from selfmirror.api.source_auth.write import CredentialWriteOutcome
+    from selfmirror.soul.dialogue_learn_queue import (
         DialogueDispatchResult,
         DialogueJob,
         DialogueJobKind,
@@ -329,7 +329,7 @@ def apply_retraction_db_marks(database: Any, events: list[dict[str, Any]]) -> in
     import surface for embedders while delegating to the same whitelist and
     timestamp rules.
     """
-    from openbiliclaw.sources.event_format import (
+    from selfmirror.sources.event_format import (
         RETRACTABLE_ACTIONS,
         parse_event_timestamp,
     )
@@ -522,14 +522,14 @@ def _recommendation_snapshot_rows_and_expiry(
     return eligible, expires_at
 
 
-# Canonical home is openbiliclaw.sources.x_auth (mirrors douyin_auth);
+# Canonical home is selfmirror.sources.x_auth (mirrors douyin_auth);
 # re-exported here because callers historically imported from api.app.
 #
 # ``X_REQUIRED_COOKIE_NAMES`` used to be re-exported here too. It no longer is:
 # which cookie names X requires is now stated once, in the write path's
 # ``CREDENTIAL_SPECS``, and a second copy in this file is exactly how a check
 # and its endpoint drift apart.
-from openbiliclaw.sources.x_auth import (  # noqa: E402, F401
+from selfmirror.sources.x_auth import (  # noqa: E402, F401
     XCookieManager,
     resolve_x_cookie,
 )
@@ -573,7 +573,7 @@ _RFC1918_NETWORKS = tuple(
     ipaddress.ip_network(net) for net in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
 )
 _BENCHMARK_NETWORK = ipaddress.ip_network("198.18.0.0/15")
-# Cover-image fetch/whitelist constants live in openbiliclaw.runtime.image_cache
+# Cover-image fetch/whitelist constants live in selfmirror.runtime.image_cache
 # (shared by the proxy route and the prefetch sweep). Only the disk-cache age cap
 # is referenced directly from here, by the startup cleanup call.
 _IMAGE_CACHE_MAX_AGE_DAYS = 30
@@ -998,8 +998,8 @@ def _restore_config_snapshot(backup_path: Path, config_path: Path) -> None:
 
 
 def _validate_llm_buildable(cfg: Any, base_issues: list[Any]) -> list[Any]:
-    from openbiliclaw.config import ConfigIssue
-    from openbiliclaw.llm.registry import RegistryBuildError, build_llm_registry
+    from selfmirror.config import ConfigIssue
+    from selfmirror.llm.registry import RegistryBuildError, build_llm_registry
 
     issues = list(base_issues)
     try:
@@ -1023,7 +1023,7 @@ def _posture_gate_enforce_issue(cfg: Any, database: Any | None) -> Any | None:
     (or a stats read failure) is conservatively treated as "no shadow data" so
     a premature enforce is rejected rather than silently accepted.
     """
-    from openbiliclaw.config import posture_gate_enforce_readiness_issue
+    from selfmirror.config import posture_gate_enforce_readiness_issue
 
     if str(getattr(cfg.soul, "posture_gate_mode", "")).strip().lower() != "enforce":
         return None
@@ -1129,7 +1129,7 @@ def _init_crash_detail(exc: BaseException) -> str:
     limit) is rewritten into a human-readable reason so the page shows advice
     instead of a raw ``InternalServerError: 非常抱歉…`` traceback fragment.
     """
-    from openbiliclaw.llm.base import describe_llm_failure
+    from selfmirror.llm.base import describe_llm_failure
 
     llm_reason = describe_llm_failure(exc)
     if llm_reason:
@@ -1839,13 +1839,13 @@ def create_app(
     project_stats_service: Any | None = None,
 ) -> FastAPI:
     """Create the local backend API app."""
-    from openbiliclaw.api.runtime_context import (
+    from selfmirror.api.runtime_context import (
         RuntimeContext,
         build_degraded_runtime_context,
         build_runtime_context,
     )
-    from openbiliclaw.config import load_config
-    from openbiliclaw.llm.registry import RegistryBuildError
+    from selfmirror.config import load_config
+    from selfmirror.llm.registry import RegistryBuildError
 
     app = FastAPI(title="OpenBiliClaw API", default_response_class=JSONResponse)
 
@@ -1886,7 +1886,7 @@ def create_app(
     # deferring beats overriding, and matching the normal default keeps an
     # already-degraded boot from growing a second, invisible failure mode
     # (opaque overseas timeouts on a machine that has a working proxy).
-    from openbiliclaw.network import set_outbound_proxy
+    from selfmirror.network import set_outbound_proxy
 
     network_config = getattr(config, "network", None)
     set_outbound_proxy(
@@ -1895,7 +1895,7 @@ def create_app(
     )
 
     if project_stats_service is None:
-        from openbiliclaw.runtime.github_stars import GitHubStarCountService
+        from selfmirror.runtime.github_stars import GitHubStarCountService
 
         project_stats_service = GitHubStarCountService(
             cache_path=config.data_path / "cache" / "github-stars.json",
@@ -1903,7 +1903,7 @@ def create_app(
 
     # Topic-lifecycle serialization switch (spec Phase 4). Off by default keeps
     # the LLM-facing profile byte-identical; on excludes archived topics.
-    from openbiliclaw.discovery.strategies._utils import set_topic_lifecycle_serialization
+    from selfmirror.discovery.strategies._utils import set_topic_lifecycle_serialization
 
     set_topic_lifecycle_serialization(
         str(getattr(getattr(config, "soul", None), "topic_lifecycle_serialization", "off"))
@@ -1914,7 +1914,7 @@ def create_app(
 
     # Auto-generate the session signing secret on first enable so login state
     # survives restarts (see docs/plans/2026-05-30-web-password-auth-design.md).
-    from openbiliclaw.api.auth import (
+    from selfmirror.api.auth import (
         AuthGate,
         _auth_env_overrides,
         authorize_websocket,
@@ -1924,7 +1924,7 @@ def create_app(
         register_auth_routes,
         websocket_session_token,
     )
-    from openbiliclaw.config import ApiAuthConfig as _ApiAuthConfig
+    from selfmirror.config import ApiAuthConfig as _ApiAuthConfig
 
     # Injection-path test doubles may hand back a config without ``api.auth``;
     # fall back to a disabled gate so the password feature stays inert there.
@@ -1934,28 +1934,28 @@ def create_app(
 
     if ensure_session_secret(_auth_cfg):
         with suppress(Exception):
-            from openbiliclaw.config import save_config
+            from selfmirror.config import save_config
 
             save_config(config)
 
     if soul_engine is not None:
         # Injection path: caller provides swappable components.
         # Auto-create stable components (database, memory_manager) if missing.
-        from openbiliclaw.config import llm_concurrency_from_config
-        from openbiliclaw.llm.concurrency import LLMConcurrencyGate
-        from openbiliclaw.runtime.events import RuntimeEventHub as _RuntimeEventHub
+        from selfmirror.config import llm_concurrency_from_config
+        from selfmirror.llm.concurrency import LLMConcurrencyGate
+        from selfmirror.runtime.events import RuntimeEventHub as _RuntimeEventHub
 
         _db = database
         _created_db = False
         if _db is None:
-            from openbiliclaw.storage.database import Database
+            from selfmirror.storage.database import Database
 
-            _db = Database(config.data_path / "openbiliclaw.db")
+            _db = Database(config.data_path / "selfmirror.db")
             _db.initialize()
             _created_db = True
         _mm = memory_manager
         if _mm is None:
-            from openbiliclaw.memory.manager import MemoryManager
+            from selfmirror.memory.manager import MemoryManager
 
             _mm = MemoryManager(config.data_path, database=_db if _created_db else None)
             _mm.initialize()
@@ -2073,10 +2073,10 @@ def create_app(
             llm_concurrency_gate=injected_gate,
         )
         if ctx.dialogue_settlement_queue is None:
-            from openbiliclaw.api.runtime_context import (
+            from selfmirror.api.runtime_context import (
                 _build_dialogue_settlement_dispatcher,
             )
-            from openbiliclaw.soul.dialogue_learn_queue import DialogueSettlementQueue
+            from selfmirror.soul.dialogue_learn_queue import DialogueSettlementQueue
 
             anchor_manager = getattr(soul_engine, "_dialogue_anchor_manager", None)
             anchor_provider = getattr(anchor_manager, "snapshot", None)
@@ -2096,7 +2096,7 @@ def create_app(
             if callable(bind_settlement_queue):
                 bind_settlement_queue(ctx.dialogue_settlement_queue)
         if ctx.dialogue is None:
-            from openbiliclaw.soul.dialogue import (
+            from selfmirror.soul.dialogue import (
                 DialogueLearningMode,
                 SocraticDialogue,
             )
@@ -2108,7 +2108,7 @@ def create_app(
                 learning_mode=DialogueLearningMode.REPLY_ONLY_TEST,
             )
         if ctx.auto_update_service is None:
-            from openbiliclaw.runtime.updater import AutoUpdateService
+            from selfmirror.runtime.updater import AutoUpdateService
 
             ctx.auto_update_service = AutoUpdateService(
                 enabled=False,
@@ -2137,8 +2137,8 @@ def create_app(
                 "; ".join(str(getattr(issue, "message", issue)) for issue in ctx.degraded_issues),
             )
     if ctx.llm_concurrency_gate is None:
-        from openbiliclaw.config import llm_concurrency_from_config
-        from openbiliclaw.llm.concurrency import LLMConcurrencyGate
+        from selfmirror.config import llm_concurrency_from_config
+        from selfmirror.llm.concurrency import LLMConcurrencyGate
 
         ctx.llm_concurrency_gate = LLMConcurrencyGate(llm_concurrency_from_config(config))
 
@@ -2246,7 +2246,7 @@ def create_app(
     def _effective_recommendation_dislikes() -> tuple[list[str], str]:
         """Read the latest output-policy snapshot without waiting for rebuild."""
 
-        from openbiliclaw.recommendation.exclusion import disliked_topics_digest
+        from selfmirror.recommendation.exclusion import disliked_topics_digest
 
         getter = getattr(ctx.soul_engine, "get_effective_disliked_topics", None)
         topics: list[str] = []
@@ -2322,11 +2322,11 @@ def create_app(
         """
         import secrets as _secrets
 
-        from openbiliclaw import auth_core as _ac
-        from openbiliclaw.config import _default_config_path as _cfg_path
-        from openbiliclaw.config import get_auth_plain_password as _get_plain
-        from openbiliclaw.config import load_config as _load
-        from openbiliclaw.config import save_config as _save
+        from selfmirror import auth_core as _ac
+        from selfmirror.config import _default_config_path as _cfg_path
+        from selfmirror.config import get_auth_plain_password as _get_plain
+        from selfmirror.config import load_config as _load
+        from selfmirror.config import save_config as _save
 
         gate = _get_auth_gate()
         if not gate.is_trusted_local(request):
@@ -2461,7 +2461,7 @@ def create_app(
         )
 
     with suppress(Exception):
-        from openbiliclaw.config import get_auth_plain_password
+        from selfmirror.config import get_auth_plain_password
 
         reconcile_password_fingerprint(app.state.auth_gate, plain=get_auth_plain_password())
 
@@ -2647,7 +2647,7 @@ def create_app(
         except Exception:
             logger.warning("source incremental owner state read failed", exc_info=True)
         try:
-            from openbiliclaw.sources.source_bootstrap import (
+            from selfmirror.sources.source_bootstrap import (
                 cancel_incremental_bootstrap_tasks,
             )
 
@@ -3102,8 +3102,8 @@ def create_app(
         """Apply the newest queued revision; intermediate pending saves coalesce."""
         nonlocal config_apply_task, config_apply_pending
         nonlocal config_applied_revision, config_last_good
-        from openbiliclaw.config import save_config
-        from openbiliclaw.network import set_outbound_proxy
+        from selfmirror.config import save_config
+        from selfmirror.network import set_outbound_proxy
 
         try:
             while config_apply_pending is not None:
@@ -3241,7 +3241,7 @@ def create_app(
         return str(metadata.get("feedback_type") or "").strip().lower() == "retraction"
 
     def _load_source_bootstrap_state() -> dict[str, object]:
-        from openbiliclaw.sources.bootstrap_state import (
+        from selfmirror.sources.bootstrap_state import (
             default_source_bootstrap_state,
             normalize_source_bootstrap_state,
         )
@@ -3259,7 +3259,7 @@ def create_app(
         key_func: Callable[[dict[str, Any]], str],
     ) -> tuple[list[dict[str, Any]], dict[int, str]]:
         """Filter bootstrap items that already propagated from an older task."""
-        from openbiliclaw.sources.bootstrap_state import (
+        from selfmirror.sources.bootstrap_state import (
             as_string_list,
             source_bootstrap_state_key,
         )
@@ -3290,7 +3290,7 @@ def create_app(
             return
         from datetime import UTC, datetime
 
-        from openbiliclaw.sources.bootstrap_state import (
+        from selfmirror.sources.bootstrap_state import (
             SOURCE_SEEN_KEY_CAP,
             merge_seen_keys,
             source_bootstrap_state_key,
@@ -3362,7 +3362,7 @@ def create_app(
     def _update_dialogue_confirmation_state(
         mutate: Callable[[dict[str, Any]], None],
     ) -> dict[str, Any]:
-        from openbiliclaw.memory.json_state import update_json_state
+        from selfmirror.memory.json_state import update_json_state
 
         def apply(state: dict[str, Any]) -> dict[str, Any]:
             mutate(state)
@@ -3403,7 +3403,7 @@ def create_app(
         return parsed.astimezone(UTC)
 
     def _hypothesis_confirmation_items() -> list[dict[str, Any]]:
-        from openbiliclaw.soul.identity import build_hash8_map
+        from selfmirror.soul.identity import build_hash8_map
 
         loader = getattr(ctx.soul_engine, "_load_insights", None)
         if not callable(loader):
@@ -3756,7 +3756,7 @@ def create_app(
         return dict(raw_payload) if isinstance(raw_payload, Mapping) else {}
 
     def _stored_dialogue_binding(row: Mapping[str, object]) -> Any | None:
-        from openbiliclaw.soul.dialogue_turn_context import (
+        from selfmirror.soul.dialogue_turn_context import (
             DialogueBindingError,
             DialogueTurnBinding,
         )
@@ -3780,14 +3780,14 @@ def create_app(
 
     def _canonical_context_for_target(reply_to_turn_id: str) -> tuple[Any, str, str, str]:
         """Resolve a target row plus exact admission generation synchronously."""
-        from openbiliclaw.soul.dialogue_learn_queue import (
+        from selfmirror.soul.dialogue_learn_queue import (
             AnchorAbsent,
             AnchorFailed,
             AnchorNotApplicable,
             AnchorPersisted,
             AnchorReserved,
         )
-        from openbiliclaw.soul.dialogue_turn_context import DialogueTurnContext
+        from selfmirror.soul.dialogue_turn_context import DialogueTurnContext
 
         normalized_target = reply_to_turn_id.strip()
         target = _read_chat_turn_row(normalized_target)
@@ -3900,14 +3900,14 @@ def create_app(
         return context, canonical_scope, canonical_subject_id, canonical_subject_title
 
     def _unbound_dialogue_binding(*, attached_confirmation: bool) -> Any:
-        from openbiliclaw.soul.dialogue_learn_queue import (
+        from selfmirror.soul.dialogue_learn_queue import (
             AnchorAbsent,
             AnchorFailed,
             AnchorNotApplicable,
             AnchorPersisted,
             AnchorReserved,
         )
-        from openbiliclaw.soul.dialogue_turn_context import DialogueTurnBinding
+        from selfmirror.soul.dialogue_turn_context import DialogueTurnBinding
 
         if attached_confirmation:
             return DialogueTurnBinding.detached()
@@ -4041,7 +4041,7 @@ def create_app(
             return 0
         rows = list_confusions(statuses=["clarifying"], limit=max(1, int(limit)))
         released = 0
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
         for row in rows:
             ask_turn_id = str(row.get("ask_turn_id", "")).strip()
@@ -4078,7 +4078,7 @@ def create_app(
         submit = getattr(settlement_queue, "submit", None)
         if not ref or not kind or not callable(submit):
             return
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
         try:
             submit(
@@ -4212,7 +4212,7 @@ def create_app(
         confusion = confusion_manager.get(confusion_id)
         if confusion is None or confusion.status not in {"open", "clarifying"}:
             raise HTTPException(status_code=409, detail="Confusion is no longer open.")
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
         if confusion.status == "open":
             completion = await _submit_dialogue_settlement_required(
@@ -4340,7 +4340,7 @@ def create_app(
                     created = True
             except Exception:
                 if claimed_open:
-                    from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+                    from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
                     await _submit_dialogue_settlement_required(
                         DialogueJobKind.CONFUSION_OPEN_SYNC,
@@ -4352,7 +4352,7 @@ def create_app(
                     )
                 raise
             if kind == "confusion" and str(row.get("turn_id", "")) != turn_id:
-                from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+                from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
                 await _submit_dialogue_settlement_required(
                     DialogueJobKind.CONFUSION_OPEN_SYNC,
@@ -4367,8 +4367,8 @@ def create_app(
         turn = _normalize_chat_turn(row)
         should_anchor = user_initiated or kind == "confusion"
         if should_anchor:
-            from openbiliclaw.soul.dialogue_anchor import ENTRY_PENDING_OPEN
-            from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+            from selfmirror.soul.dialogue_anchor import ENTRY_PENDING_OPEN
+            from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
             producer_source = (
                 "pending_confusion_throw" if kind == "confusion" else "pending_probe_throw"
@@ -4561,7 +4561,7 @@ def create_app(
         provider = str(getattr(emb, "provider", "") or "").strip().lower()
         if provider != "ollama":
             return False
-        from openbiliclaw.runtime.ollama_supervisor import is_loopback
+        from selfmirror.runtime.ollama_supervisor import is_loopback
 
         base_url, _ = _embedding_ollama_target()
         return is_loopback(base_url)
@@ -4611,7 +4611,7 @@ def create_app(
             # unknown provider NAME (e.g. a browser-translated value like
             # '奥拉玛' — re-pick in settings) from a known provider whose
             # build failed (usually missing key / base_url — fix credentials).
-            from openbiliclaw.llm.registry import _EMBEDDING_CAPABLE_PROVIDERS
+            from selfmirror.llm.registry import _EMBEDDING_CAPABLE_PROVIDERS
 
             if provider.lower() in _EMBEDDING_CAPABLE_PROVIDERS:
                 return (
@@ -4637,7 +4637,7 @@ def create_app(
         async with _embedding_diag_lock:
             if time.monotonic() - _embedding_diag_checked_at < _diag_ttl:
                 return _embedding_diag_value
-            from openbiliclaw.llm.ollama_diagnostics import diagnose_ollama_embedding
+            from selfmirror.llm.ollama_diagnostics import diagnose_ollama_embedding
 
             base_url, model = _embedding_ollama_target()
             try:
@@ -4747,7 +4747,7 @@ def create_app(
         the panel. UI liveness indicators should hit this instead and keep
         ``/api/health`` for profile/embedding state.
         """
-        body: dict[str, object] = {"status": "ok", "service": "openbiliclaw-api"}
+        body: dict[str, object] = {"status": "ok", "service": "selfmirror-api"}
         if bool(getattr(ctx, "degraded", False)):
             # Preserve pure liveness semantics (status stays "ok") while
             # giving browser shells a provider-free fast path to avoid firing
@@ -4792,7 +4792,7 @@ def create_app(
         if bool(getattr(ctx, "degraded", False)):
             body: dict[str, object] = {
                 "status": "degraded",
-                "service": "openbiliclaw-api",
+                "service": "selfmirror-api",
                 "reason": str(getattr(ctx, "degraded_reason", "")),
                 "issues": _degraded_issues_payload(),
                 "embedding_ready": embedding_ready,
@@ -4804,7 +4804,7 @@ def create_app(
             return JSONResponse(status_code=200, content=body)
         return HealthResponse(
             status="ok",
-            service="openbiliclaw-api",
+            service="selfmirror-api",
             profile_ready=profile_ready,
             lan_ip=lan_ip,
             embedding_ready=embedding_ready,
@@ -4817,7 +4817,7 @@ def create_app(
         Remote-readable (mirrors autostart-status): a non-local caller still
         sees the state but ``can_manage`` is False. Degraded-mode readable.
         """
-        from openbiliclaw.docker_runtime import is_running_in_container
+        from selfmirror.docker_runtime import is_running_in_container
 
         coord = ctx.init_coordinator
         prereqs = ctx.init_prereqs
@@ -4885,7 +4885,7 @@ def create_app(
         # wizard can explicitly opt one in for the current run before config is
         # persisted; omitting it here would let a newly selected mixed-auth
         # source bypass the readiness gate.
-        from openbiliclaw.api.source_auth.providers import (
+        from selfmirror.api.source_auth.providers import (
             SOURCE_AUTH_PROVIDERS,
             SourceAuthContext,
         )
@@ -5033,7 +5033,7 @@ def create_app(
     def _init_runtime_supported() -> tuple[bool, str]:
         """Cheap guard: GUI init needs a writable host runtime (gui-init §5b,
         review R2 A-7). Docker uses the headless auto-init path instead."""
-        from openbiliclaw.docker_runtime import is_running_in_container
+        from selfmirror.docker_runtime import is_running_in_container
 
         if is_running_in_container():
             return False, "Docker 运行时不支持图形化初始化"
@@ -5106,7 +5106,7 @@ def create_app(
             return False
 
         try:
-            from openbiliclaw.config import Config, save_config
+            from selfmirror.config import Config, save_config
 
             cfg = cast("Config", cfg)
 
@@ -5158,7 +5158,7 @@ def create_app(
         :func:`_select_init_platforms`). ``None`` keeps the legacy behaviour of
         using everything enabled.
         """
-        from openbiliclaw.cli import (
+        from selfmirror.cli import (
             _INIT_BILIBILI_FAVORITE_LIMIT,
             _INIT_BILIBILI_FOLLOW_LIMIT,
             _INIT_POOL_TARGET_COUNT,
@@ -5182,7 +5182,7 @@ def create_app(
             # re-init replaces or deletes (soul profile, and with
             # reset_cognition the awareness/insight layers) is unrecoverable.
             try:
-                from openbiliclaw.cli import _create_reinit_backup
+                from selfmirror.cli import _create_reinit_backup
 
                 backup_path = _create_reinit_backup()
                 if backup_path is not None:
@@ -5423,7 +5423,7 @@ def create_app(
         bangumi_username_supplied = scoped_bangumi_username or legacy_bangumi_username
         selected_bangumi_username: str | None = None
         if bangumi_username_supplied:
-            from openbiliclaw.sources.bangumi_client import validate_bangumi_username
+            from selfmirror.sources.bangumi_client import validate_bangumi_username
 
             try:
                 raw_bangumi_username = (
@@ -5440,7 +5440,7 @@ def create_app(
         scoped_bangumi_token = "access_token" in bangumi_options
         selected_bangumi_token: str | None = None
         if scoped_bangumi_token:
-            from openbiliclaw.sources.bangumi_client import validate_bangumi_access_token
+            from selfmirror.sources.bangumi_client import validate_bangumi_access_token
 
             try:
                 selected_bangumi_token = validate_bangumi_access_token(
@@ -5474,7 +5474,7 @@ def create_app(
         v2ex_username_supplied = scoped_v2ex_username or legacy_v2ex_username
         selected_v2ex_username: str | None = None
         if v2ex_username_supplied:
-            from openbiliclaw.sources.v2ex_client import validate_v2ex_username
+            from selfmirror.sources.v2ex_client import validate_v2ex_username
 
             try:
                 raw_v2ex_username = (
@@ -5621,7 +5621,7 @@ def create_app(
             configured_v2ex_username if selected_v2ex_username is None else selected_v2ex_username
         )
         if "v2ex" in effective_sources:
-            from openbiliclaw.api.source_auth.providers import (
+            from selfmirror.api.source_auth.providers import (
                 SourceAuthContext,
                 v2ex_capability_readiness,
             )
@@ -5644,7 +5644,7 @@ def create_app(
         # reject a bad/expired token with its real cause (project rule 7) instead
         # of writing an unusable secret.
         if "bangumi" in effective_sources and effective_bangumi_token:
-            from openbiliclaw.sources.bangumi_client import (
+            from selfmirror.sources.bangumi_client import (
                 BangumiAPIError,
                 resolve_access_token_identity,
             )
@@ -5897,7 +5897,7 @@ def create_app(
         )
 
     async def _run_embedding_repair(base_url: str, model: str) -> None:
-        from openbiliclaw.llm.ollama_diagnostics import pull_ollama_model
+        from selfmirror.llm.ollama_diagnostics import pull_ollama_model
 
         def _on_progress(status: str, completed: int, total: int) -> None:
             embedding_progress.report_pull(status, completed, total)
@@ -5933,14 +5933,14 @@ def create_app(
             return False
         try:
             base_url, model = _embedding_ollama_target()
-            from openbiliclaw.llm.ollama_diagnostics import (
+            from selfmirror.llm.ollama_diagnostics import (
                 DIAG_MODEL_BROKEN,
                 DIAG_MODEL_MISSING,
                 DIAG_NOT_RUNNING,
                 diagnose_ollama_embedding,
                 ollama_embedding_disk_space_error,
             )
-            from openbiliclaw.runtime.ollama_supervisor import (
+            from selfmirror.runtime.ollama_supervisor import (
                 effective_ollama_endpoint,
                 ensure_managed_ollama,
                 is_loopback,
@@ -6033,7 +6033,7 @@ def create_app(
             )
         base_url, model = _embedding_ollama_target()
 
-        from openbiliclaw.llm.ollama_diagnostics import (
+        from selfmirror.llm.ollama_diagnostics import (
             DIAG_DISK_FULL,
             DIAG_ERROR,
             DIAG_MODEL_BROKEN,
@@ -6058,7 +6058,7 @@ def create_app(
                     _expire_embedding_ready_cache()
                     return JSONResponse({"ok": True, "already_ok": True, "model": model})
                 if code == DIAG_NOT_RUNNING:
-                    from openbiliclaw.runtime.ollama_supervisor import (
+                    from selfmirror.runtime.ollama_supervisor import (
                         effective_ollama_endpoint,
                         ensure_managed_ollama,
                         is_loopback,
@@ -6095,7 +6095,7 @@ def create_app(
                     actions += 1
                     continue
                 if code == DIAG_MODEL_PATH_ENCODING:
-                    from openbiliclaw.runtime.ollama_supervisor import (
+                    from selfmirror.runtime.ollama_supervisor import (
                         ollama_models_relocation_candidate,
                         restart_managed_ollama_with_models_dir,
                     )
@@ -6146,7 +6146,7 @@ def create_app(
                     return JSONResponse({"error": code, "detail": detail}, status_code=409)
                 if code == DIAG_ERROR:
                     if not provider_error_restarted:
-                        from openbiliclaw.runtime.ollama_supervisor import (
+                        from selfmirror.runtime.ollama_supervisor import (
                             effective_ollama_endpoint,
                             is_loopback,
                             may_manage_ollama_endpoint,
@@ -6313,8 +6313,8 @@ def create_app(
         Users who flip ``--host 0.0.0.0`` should put their own auth
         layer in front of the backend.
         """
-        from openbiliclaw.bilibili.auth import AuthManager
-        from openbiliclaw.config import load_config_with_diagnostics
+        from selfmirror.bilibili.auth import AuthManager
+        from selfmirror.config import load_config_with_diagnostics
 
         cookie_value = payload.cookie.strip()
         if not cookie_value:
@@ -6410,7 +6410,7 @@ def create_app(
         real ``user.uid`` when logged in and ``status_code=8`` / "用户未登录"
         when not: an explicit error code, not the ambiguity the claim feared.
         So a Douyin cookie is now probed *before* it lands, like B站's. The
-        probe lives in :mod:`openbiliclaw.sources.douyin_login_probe`; do not
+        probe lives in :mod:`selfmirror.sources.douyin_login_probe`; do not
         reintroduce the old conclusion without repeating the experiment.
         """
         cookie_value = payload.cookie.strip()
@@ -6480,7 +6480,7 @@ def create_app(
         reddit.com cookies with Chrome's ``cookies`` permission and persist them
         in rdt-cli's own credential format.
         """
-        from openbiliclaw.sources.reddit_tasks import _rdt_credential_file
+        from selfmirror.sources.reddit_tasks import _rdt_credential_file
 
         cookie_value = payload.cookie.strip()
         if not cookie_value:
@@ -6518,7 +6518,7 @@ def create_app(
 
     @app.post("/api/init-completed")
     async def init_completed() -> dict[str, object]:
-        """Notify the running server that ``openbiliclaw init`` has finished.
+        """Notify the running server that ``selfmirror init`` has finished.
 
         Called by the CLI at the end of a successful init.  The handler
         broadcasts an ``init_completed`` event via WebSocket so the
@@ -6592,7 +6592,7 @@ def create_app(
 
         if not items:
             return []
-        from openbiliclaw.recommendation.exclusion import filter_recommendation_rows
+        from selfmirror.recommendation.exclusion import filter_recommendation_rows
 
         disliked_topics, _digest = _effective_recommendation_dislikes()
         if not disliked_topics:
@@ -6714,8 +6714,8 @@ def create_app(
             connected = True
             client_name = str(websocket.query_params.get("client", "") or "").strip().lower()
             if client_name in {"background", "extension", "service-worker"}:
-                from openbiliclaw.bilibili.auth import resolve_runtime_cookie
-                from openbiliclaw.sources.douyin_auth import resolve_douyin_cookie
+                from selfmirror.bilibili.auth import resolve_runtime_cookie
+                from selfmirror.sources.douyin_auth import resolve_douyin_cookie
 
                 runtime_config = getattr(ctx, "config", None) or config
                 # Browser-only sources persist just a boolean login heartbeat.
@@ -6779,7 +6779,7 @@ def create_app(
                                 }
                             )
                 with suppress(Exception):
-                    from openbiliclaw.sources.reddit_tasks import _rdt_saved_credential_state
+                    from selfmirror.sources.reddit_tasks import _rdt_saved_credential_state
 
                     rd_cfg = getattr(runtime_config.sources, "reddit", None)
                     rd_backend = str(getattr(rd_cfg, "backend", "rdt") or "rdt").strip().lower()
@@ -6964,7 +6964,7 @@ def create_app(
                 return []
             return [str(d.get("domain", "")) for d in domains if isinstance(d, dict)]
 
-        from openbiliclaw.api.models import (
+        from selfmirror.api.models import (
             AwarenessNoteOut,
             ContextModeOut,
             InsightHypothesisOut,
@@ -6977,8 +6977,8 @@ def create_app(
             SpeculativeSpecificOut,
             StylePreferenceOut,
         )
-        from openbiliclaw.soul.avoidance_speculator import load_avoidance_state
-        from openbiliclaw.soul.speculator import load_speculative_state
+        from selfmirror.soul.avoidance_speculator import load_avoidance_state
+        from selfmirror.soul.speculator import load_speculative_state
 
         prefs = profile.preferences
 
@@ -7232,7 +7232,7 @@ def create_app(
         latter truncates lists for display, so it cannot reach e.g. the 13th
         interest or 9th UP.
         """
-        from openbiliclaw.soul.overrides import build_edit_state
+        from selfmirror.soul.overrides import build_edit_state
 
         try:
             raw = await ctx.soul_engine.get_raw_profile()
@@ -7249,7 +7249,7 @@ def create_app(
         a second round-trip. Embedding / LLM services for the dislike pool
         purge are resolved inside ``apply_user_edit`` from the soul engine.
         """
-        from openbiliclaw.soul.overrides import ProfileEditError, build_edit_state
+        from selfmirror.soul.overrides import ProfileEditError, build_edit_state
 
         try:
             await ctx.soul_engine.apply_user_edit(
@@ -7276,7 +7276,7 @@ def create_app(
 
     @app.post("/api/events", response_model=EventIngestResponse)
     async def ingest_events(payload: BehaviorEventBatchIn) -> EventIngestResponse:
-        from openbiliclaw.sources.event_format import build_event
+        from selfmirror.sources.event_format import build_event
 
         if _health_profile_ready() is False:
             return EventIngestResponse(
@@ -7371,14 +7371,14 @@ def create_app(
         observed_v2ex_username = ""
         if hasattr(ctx.database, "get_v2ex_browser_identity"):
             observed_v2ex_username = str(ctx.database.get_v2ex_browser_identity()[0] or "").strip()
-        from openbiliclaw.sources.v2ex_affinity import v2ex_affinity_projection_username
+        from selfmirror.sources.v2ex_affinity import v2ex_affinity_projection_username
 
         affinity_username = v2ex_affinity_projection_username(
             active_v2ex_username,
             observed_v2ex_username,
         )
         if affinity_username:
-            from openbiliclaw.sources.v2ex_affinity import (
+            from selfmirror.sources.v2ex_affinity import (
                 V2EXNodeAffinityStore,
                 v2ex_engaged_view_affinity_item,
             )
@@ -7531,7 +7531,7 @@ def create_app(
                     )
 
         if disliked_topics:
-            from openbiliclaw.recommendation.exclusion import filter_recommendation_rows
+            from selfmirror.recommendation.exclusion import filter_recommendation_rows
 
             rows = filter_recommendation_rows(rows, disliked_topics)
         rows, snapshot_expires_at = _recommendation_snapshot_rows_and_expiry(rows)
@@ -8130,7 +8130,7 @@ def create_app(
         limit: int = 10,
         before: str = "",
     ) -> ActivityFeedResponse:
-        from openbiliclaw.runtime.activity_feed import ActivityFeedBuilder
+        from selfmirror.runtime.activity_feed import ActivityFeedBuilder
 
         runtime_status: dict[str, object] = {}
         get_runtime_status = getattr(ctx.runtime_controller, "get_runtime_status", None)
@@ -8593,7 +8593,7 @@ def create_app(
             timings = None
         items = _filter_recommendation_objects_for_latest_dislikes(items)
         if items:
-            from openbiliclaw.sources.event_format import SOURCE_WEB, build_event
+            from selfmirror.sources.event_format import SOURCE_WEB, build_event
 
             returned_item_ids = [
                 str(getattr(getattr(item, "content", None), "bvid", "") or "").strip()
@@ -8761,7 +8761,7 @@ def create_app(
     async def agent_bridge(payload: dict[str, Any]) -> dict[str, Any]:
         """Dispatch one OpenClaw agent-bridge command against a warm adapter.
 
-        Mirrors the ``openbiliclaw.integrations.openclaw.cli`` JSON contract
+        Mirrors the ``selfmirror.integrations.openclaw.cli`` JSON contract
         (``{ok, data}`` / ``{ok: false, error, error_type}``) but runs inside
         the warm serve-api process, so agent hosts avoid the per-call Python
         import cold start.  The adapter is built lazily on first use and cached
@@ -8787,14 +8787,14 @@ def create_app(
             async with lock:
                 adapter = getattr(app.state, "agent_bridge_adapter", None)
                 if adapter is None:
-                    from openbiliclaw.integrations.openclaw.bootstrap import (
+                    from selfmirror.integrations.openclaw.bootstrap import (
                         build_openclaw_adapter,
                     )
 
                     adapter = await asyncio.to_thread(build_openclaw_adapter)
                     app.state.agent_bridge_adapter = adapter
 
-        from openbiliclaw.integrations.openclaw.cli import _build_parser, _run_command
+        from selfmirror.integrations.openclaw.cli import _build_parser, _run_command
 
         parser = _build_parser()
         try:
@@ -8881,7 +8881,7 @@ def create_app(
             if callable(get_notification_candidate):
                 candidate = get_notification_candidate(min_confidence=0.82)
                 if candidate is not None:
-                    from openbiliclaw.recommendation.exclusion import (
+                    from selfmirror.recommendation.exclusion import (
                         filter_recommendation_rows,
                     )
 
@@ -8898,7 +8898,7 @@ def create_app(
                             "reason": str(candidate.get("expression", "")),
                         }
         if item is not None:
-            from openbiliclaw.recommendation.exclusion import filter_recommendation_rows
+            from selfmirror.recommendation.exclusion import filter_recommendation_rows
 
             disliked_topics, _digest = _effective_recommendation_dislikes()
             if not filter_recommendation_rows(
@@ -8986,7 +8986,7 @@ def create_app(
             except (ValueError, TypeError):
                 count = 1
 
-        from openbiliclaw.recommendation.delight import DEFAULT_DELIGHT_THRESHOLD
+        from selfmirror.recommendation.delight import DEFAULT_DELIGHT_THRESHOLD
 
         threshold = DEFAULT_DELIGHT_THRESHOLD
         dynamic_threshold = getattr(ctx.runtime_controller, "_dynamic_delight_threshold", None)
@@ -9072,7 +9072,7 @@ def create_app(
         dismisses it. Such rows come back with ``state="liked"`` so clients
         render the already-liked treatment.
         """
-        from openbiliclaw.recommendation.delight import DEFAULT_DELIGHT_THRESHOLD
+        from selfmirror.recommendation.delight import DEFAULT_DELIGHT_THRESHOLD
 
         configured_limit = getattr(
             getattr(getattr(ctx, "config", None), "scheduler", None),
@@ -9178,7 +9178,7 @@ def create_app(
 
         reaction_receipt: Any = None
         if response_type in {"like", "dislike", "dismiss"}:
-            from openbiliclaw.sources.event_format import SOURCE_WEB, build_event
+            from selfmirror.sources.event_format import SOURCE_WEB, build_event
 
             reaction_event = build_event(
                 event_type="feedback",
@@ -9461,7 +9461,7 @@ def create_app(
         include_source_mode: bool = False,
     ) -> dict[str, object]:
         """Read active probe metadata before confirm/reject mutates state."""
-        from openbiliclaw.soul.speculator import build_probe_axis
+        from selfmirror.soul.speculator import build_probe_axis
 
         if not callable(get_active):
             return {"domain": domain}
@@ -9540,7 +9540,7 @@ def create_app(
         metadata: dict[str, object] | None = None,
     ) -> None:
         """Persist explicit user feedback for future probe novelty checks."""
-        from openbiliclaw.soul.speculator import append_probe_feedback_history
+        from selfmirror.soul.speculator import append_probe_feedback_history
 
         memory_manager = getattr(ctx, "memory_manager", None)
         if memory_manager is None:
@@ -9669,7 +9669,7 @@ def create_app(
         llm = getattr(ctx.recommendation_engine, "_llm", None)
         if llm is None:
             return "neutral"
-        from openbiliclaw.llm.prompts import build_probe_sentiment_prompt
+        from selfmirror.llm.prompts import build_probe_sentiment_prompt
 
         messages = build_probe_sentiment_prompt(domain=domain, user_message=user_message)
         try:
@@ -9729,8 +9729,8 @@ def create_app(
     ) -> None:
         if not promoted:
             return
-        from openbiliclaw.soul.interest_writeback import merge_confirmed_interest
-        from openbiliclaw.soul.profile import OnionProfile
+        from selfmirror.soul.interest_writeback import merge_confirmed_interest
+        from selfmirror.soul.profile import OnionProfile
 
         memory_manager = getattr(ctx, "memory_manager", None)
         get_layer = getattr(memory_manager, "get_layer", None)
@@ -9786,7 +9786,7 @@ def create_app(
     ) -> None:
         from datetime import UTC, datetime
 
-        from openbiliclaw.soul.exploration_buffer import (
+        from selfmirror.soul.exploration_buffer import (
             pop_promotable_buffer_entries,
             record_buffer_event,
         )
@@ -9907,7 +9907,7 @@ def create_app(
         confusion = confusion_manager.get(confusion_id)
         if confusion is None or confusion.status in {"resolved", "dismissed", "expired"}:
             return
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
         if confusion.status == "open":
             scheduled = await _submit_dialogue_settlement_required(
@@ -9926,7 +9926,7 @@ def create_app(
             confusion = confusion_manager.get(confusion_id)
         if confusion is None or confusion.status != "clarifying":
             raise RuntimeError("Confusion could not enter clarifying state")
-        from openbiliclaw.soul.dialogue_anchor import ENTRY_CONFUSION_PROMPT
+        from selfmirror.soul.dialogue_anchor import ENTRY_CONFUSION_PROMPT
 
         await _submit_dialogue_settlement_required(
             DialogueJobKind.ANCHOR_ESTABLISH,
@@ -9965,7 +9965,7 @@ def create_app(
         )
 
         if not reply.strip():
-            from openbiliclaw.llm.service import LLMResponseContentError
+            from selfmirror.llm.service import LLMResponseContentError
 
             raise LLMResponseContentError("LLM returned an empty response")
 
@@ -9987,7 +9987,7 @@ def create_app(
             )
         elif turn.scope == "probe":
             domain = turn.subject_id or turn.subject_title
-            from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+            from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
             completion = await _submit_dialogue_settlement_required(
                 DialogueJobKind.PROBE_REPLY_APPLY,
@@ -10084,7 +10084,7 @@ def create_app(
             )
             await _publish_probe_event("avoidance.chat", summary, domain)
         elif turn.scope == "confusion":
-            from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+            from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
             binding = _binding_from_turn(turn)
             await _submit_dialogue_settlement_required(
@@ -10124,7 +10124,7 @@ def create_app(
         turn_id: str,
         source: str,
     ) -> dict[str, Any]:
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
         completion = await _submit_dialogue_settlement(
             DialogueJobKind.SETTLE_HYPOTHESIS,
@@ -10211,7 +10211,7 @@ def create_app(
         }
 
     def _anchor_actual_state(kind: str, ref: str) -> Any:
-        from openbiliclaw.soul.dialogue_learn_queue import AnchorAbsent, AnchorPersisted
+        from selfmirror.soul.dialogue_learn_queue import AnchorAbsent, AnchorPersisted
 
         anchor_manager = getattr(ctx.soul_engine, "_dialogue_anchor_manager", None)
         if anchor_manager is None:
@@ -10232,8 +10232,8 @@ def create_app(
         """Apply card discuss in-worker and return before reservation resolution."""
         from types import MappingProxyType
 
-        from openbiliclaw.soul.dialogue_anchor import ENTRY_CARD_DISCUSS
-        from openbiliclaw.soul.dialogue_learn_queue import (
+        from selfmirror.soul.dialogue_anchor import ENTRY_CARD_DISCUSS
+        from selfmirror.soul.dialogue_learn_queue import (
             AnchorMutationTerminal,
             DialogueDispatchResult,
             DialogueJobResult,
@@ -10335,7 +10335,7 @@ def create_app(
     async def _handle_card_defer(job: DialogueJob) -> DialogueJobResult:
         from types import MappingProxyType
 
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobResult
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobResult
 
         row = _read_chat_turn_row(str(job.payload.get("turn_id", "")))
         if row is None:
@@ -10353,7 +10353,7 @@ def create_app(
         return _discuss_hypothesis_card(_normalize_chat_turn(row), job)
 
     async def _handle_anchor_establish(job: DialogueJob) -> DialogueDispatchResult:
-        from openbiliclaw.soul.dialogue_learn_queue import (
+        from selfmirror.soul.dialogue_learn_queue import (
             AnchorMutationTerminal,
             DialogueDispatchResult,
             DialogueJobResult,
@@ -10399,7 +10399,7 @@ def create_app(
     async def _handle_confusion_open_sync(job: DialogueJob) -> DialogueJobResult:
         from types import MappingProxyType
 
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobResult
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobResult
 
         _require_dialogue_settlement_worker()
         operation = str(job.payload.get("operation", "")).strip().lower()
@@ -10486,7 +10486,7 @@ def create_app(
             raise RuntimeError(f"Could not persist {receipt_key} for turn {turn_id!r}")
 
     async def _handle_probe_reply_apply(job: DialogueJob) -> DialogueJobResult:
-        from openbiliclaw.soul.dialogue_learn_queue import (
+        from selfmirror.soul.dialogue_learn_queue import (
             DialogueJobResult,
             ExplorationIntent,
         )
@@ -10646,7 +10646,7 @@ def create_app(
         )
 
     async def _handle_confusion_reply_apply(job: DialogueJob) -> DialogueJobResult:
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobResult
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobResult
 
         _require_dialogue_settlement_worker()
         turn_id = str(job.payload.get("turn_id", "")).strip()
@@ -10694,7 +10694,7 @@ def create_app(
     async def _handle_card_reconcile(job: DialogueJob) -> DialogueJobResult:
         from types import MappingProxyType
 
-        from openbiliclaw.soul.dialogue_learn_queue import DialogueJobResult
+        from selfmirror.soul.dialogue_learn_queue import DialogueJobResult
 
         _require_dialogue_settlement_worker()
         turn_id = str(job.payload.get("turn_id", "")).strip()
@@ -10717,7 +10717,7 @@ def create_app(
             settlement=MappingProxyType(dict(result)),
         )
 
-    from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+    from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
     ctx.dialogue_settlement_handlers.update(
         {
@@ -10751,7 +10751,7 @@ def create_app(
                 # Shutdown leaves the durable row pending for startup recovery.
                 raise
             except Exception as exc:
-                from openbiliclaw.llm.service import LLMResponseContentError
+                from selfmirror.llm.service import LLMResponseContentError
 
                 if isinstance(exc, LLMResponseContentError):
                     raise TerminalChatReplyError(
@@ -10831,7 +10831,7 @@ def create_app(
                 raise RuntimeError("Completed hypothesis card disappeared")
             return _normalize_chat_turn(completed)
 
-        from openbiliclaw.soul.dialogue_turn_context import DialogueTurnBinding
+        from selfmirror.soul.dialogue_turn_context import DialogueTurnBinding
 
         binding: DialogueTurnBinding
         canonical_scope = normalized_scope
@@ -10956,7 +10956,7 @@ def create_app(
         if turn.payload.get("type") != "card" or turn.payload.get("kind") != "hypothesis":
             raise HTTPException(status_code=409, detail="Chat turn is not a hypothesis card.")
         if action in {"defer", "discuss"}:
-            from openbiliclaw.soul.dialogue_learn_queue import DialogueJobKind
+            from selfmirror.soul.dialogue_learn_queue import DialogueJobKind
 
             ref = str(turn.payload.get("ref", "")).strip()
             kind = DialogueJobKind.CARD_DEFER if action == "defer" else DialogueJobKind.CARD_DISCUSS
@@ -10993,7 +10993,7 @@ def create_app(
                     context, _scope, _subject_id, _subject_title = _canonical_context_for_target(
                         turn.turn_id
                     )
-                    from openbiliclaw.soul.dialogue_turn_context import DialogueTurnBinding
+                    from selfmirror.soul.dialogue_turn_context import DialogueTurnBinding
 
                     result["context_preview"] = _context_preview(
                         DialogueTurnBinding.from_context(context)
@@ -11025,7 +11025,7 @@ def create_app(
         context, _scope, _subject_id, _subject_title = _canonical_context_for_target(
             reply_to_turn_id
         )
-        from openbiliclaw.soul.dialogue_turn_context import DialogueTurnBinding
+        from selfmirror.soul.dialogue_turn_context import DialogueTurnBinding
 
         return _context_preview(DialogueTurnBinding.from_context(context))
 
@@ -11080,7 +11080,7 @@ def create_app(
         survive page refreshes (unlike WebSocket-only delivery).
         """
         try:
-            from openbiliclaw.soul.speculator import load_speculative_state
+            from selfmirror.soul.speculator import load_speculative_state
 
             runtime_config = getattr(ctx, "config", None) or config
             spec_state = load_speculative_state(runtime_config.data_path)
@@ -11403,7 +11403,7 @@ def create_app(
     async def pending_avoidance_probes() -> dict[str, Any]:
         """Return active speculative avoidances awaiting user response."""
         try:
-            from openbiliclaw.soul.avoidance_speculator import load_avoidance_state
+            from selfmirror.soul.avoidance_speculator import load_avoidance_state
 
             runtime_config = getattr(ctx, "config", None) or config
             avoidance_state = load_avoidance_state(runtime_config.data_path)
@@ -11699,7 +11699,7 @@ def create_app(
         if recommendation is None:
             raise HTTPException(status_code=404, detail="Recommendation not found.")
 
-        from openbiliclaw.sources.event_format import (
+        from selfmirror.sources.event_format import (
             SOURCE_BILIBILI,
             build_event,
             format_event_context,
@@ -11858,7 +11858,7 @@ def create_app(
             )
 
         # Persist the click as an event so history/query paths can see it.
-        from openbiliclaw.sources.event_format import (
+        from selfmirror.sources.event_format import (
             build_event,
             format_event_context,
         )
@@ -11996,7 +11996,7 @@ def create_app(
             raise HTTPException(status_code=422, detail="hypothesis is required.")
         if ctx.soul_engine is None:
             raise HTTPException(status_code=503, detail="Soul engine not ready.")
-        from openbiliclaw.soul.identity import build_hash8_map, insight_hash8
+        from selfmirror.soul.identity import build_hash8_map, insight_hash8
 
         ref = insight_hash8(hypothesis)
         load_insights = getattr(ctx.soul_engine, "_load_insights", None)
@@ -12123,7 +12123,7 @@ def create_app(
     xhs_url_prefix = "https://www.xiaohongshu.com/"
 
     def _discovery_candidate_pending_cap() -> int:
-        from openbiliclaw.discovery.candidate_pool import discovery_candidate_pending_cap
+        from selfmirror.discovery.candidate_pool import discovery_candidate_pending_cap
 
         scheduler = getattr(config, "scheduler", None)
         target = int(getattr(scheduler, "pool_target_count", 300) or 300)
@@ -12147,9 +12147,9 @@ def create_app(
     ) -> int:
         """Enqueue extension-collected Bilibili search videos for evaluation."""
 
-        from openbiliclaw.discovery.candidate_pool import discovered_content_to_candidate_write
-        from openbiliclaw.discovery.engine import DiscoveredContent
-        from openbiliclaw.published_time import normalize_published_time
+        from selfmirror.discovery.candidate_pool import discovered_content_to_candidate_write
+        from selfmirror.discovery.engine import DiscoveredContent
+        from selfmirror.published_time import normalize_published_time
 
         enqueue = getattr(database, "enqueue_discovery_candidates", None)
         if not callable(enqueue):
@@ -12234,7 +12234,7 @@ def create_app(
             return int(enqueue(writes))
 
     def _mark_bili_task_keyword_terminal(payload_json: str | None, *, success: bool) -> None:
-        from openbiliclaw.sources.bili_tasks import source_keyword_id_from_bili_task
+        from selfmirror.sources.bili_tasks import source_keyword_id_from_bili_task
 
         keyword_id = source_keyword_id_from_bili_task(payload_json)
         if keyword_id is None:
@@ -12556,9 +12556,9 @@ def create_app(
         """
         from urllib.parse import urlparse
 
-        from openbiliclaw.discovery.candidate_pool import discovered_content_to_candidate_write
-        from openbiliclaw.discovery.engine import DiscoveredContent
-        from openbiliclaw.published_time import normalize_published_time
+        from selfmirror.discovery.candidate_pool import discovered_content_to_candidate_write
+        from selfmirror.discovery.engine import DiscoveredContent
+        from selfmirror.published_time import normalize_published_time
 
         enqueue = getattr(database, "enqueue_discovery_candidates", None)
         if not callable(enqueue):
@@ -12858,7 +12858,7 @@ def create_app(
             ctx.database.clear_v2ex_browser_identity()
         username = str(payload.get("username", "") or "").strip()
         if username and logged_in:
-            from openbiliclaw.sources.v2ex_client import validate_v2ex_username
+            from selfmirror.sources.v2ex_client import validate_v2ex_username
 
             try:
                 username = validate_v2ex_username(username)
@@ -12898,7 +12898,7 @@ def create_app(
     @app.post("/api/sources/v2ex/identity")
     async def ingest_v2ex_identity(payload: dict[str, Any]) -> dict[str, Any]:
         """Persist an observed username or an explicit user acceptance."""
-        from openbiliclaw.sources.v2ex_client import validate_v2ex_username
+        from selfmirror.sources.v2ex_client import validate_v2ex_username
 
         try:
             username = validate_v2ex_username(payload.get("username"))
@@ -12927,9 +12927,9 @@ def create_app(
     @app.get("/api/sources/v2ex/identity")
     def get_v2ex_identity() -> dict[str, Any]:
         """Return the local identity ladder and conflict gate without I/O."""
-        from openbiliclaw.api.source_auth.probe_cache import LIVE_PROBES
-        from openbiliclaw.config import load_config
-        from openbiliclaw.sources.v2ex_identity import resolve_v2ex_identity_state
+        from selfmirror.api.source_auth.probe_cache import LIVE_PROBES
+        from selfmirror.config import load_config
+        from selfmirror.sources.v2ex_identity import resolve_v2ex_identity_state
 
         result = resolve_v2ex_identity_state(
             cfg=load_config(),
@@ -12966,7 +12966,7 @@ def create_app(
         integer; malformed usernames are dropped (treated as missing) rather
         than persisted, per the defensive-parse rule.
         """
-        from openbiliclaw.sources.bangumi_client import validate_bangumi_username
+        from selfmirror.sources.bangumi_client import validate_bangumi_username
 
         if not isinstance(raw, dict):
             return None
@@ -13106,7 +13106,7 @@ def create_app(
         still stops seeing the stale claim, instead of waiting for a report
         that may never come.
         """
-        from openbiliclaw.sources.bangumi_client import validate_bangumi_username
+        from selfmirror.sources.bangumi_client import validate_bangumi_username
 
         memory_manager = getattr(ctx.runtime_controller, "memory_manager", None)
         if memory_manager is None:
@@ -13163,7 +13163,7 @@ def create_app(
           proxy), so the guard's honesty has to come from the flag + log rather
           than from rejecting the report.
         """
-        from openbiliclaw.sources.bangumi_client import (
+        from selfmirror.sources.bangumi_client import (
             BangumiAPIError,
             BangumiClient,
             validate_bangumi_username,
@@ -13274,7 +13274,7 @@ def create_app(
 
     # ── Bilibili extension search fallback endpoints ────────────────
 
-    from openbiliclaw.sources.bili_tasks import (
+    from selfmirror.sources.bili_tasks import (
         BiliTaskQueue,
         source_keyword_id_from_bili_task,
     )
@@ -13439,7 +13439,7 @@ def create_app(
 
     # ── XHS task queue endpoints (extension dispatcher) ──────────────
 
-    from openbiliclaw.sources.xhs_tasks import (
+    from selfmirror.sources.xhs_tasks import (
         XhsCreatorStore,
         XhsTaskQueue,
         xhs_bootstrap_note_key,
@@ -13568,7 +13568,7 @@ def create_app(
             # Terminal rows are immutable. In particular, never ingest fields
             # from a changed retry payload after the canonical result closed.
             return {"ok": True, "ignored": True}
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -13797,7 +13797,7 @@ def create_app(
     # server-side via XCreatorStrategy. This block only owns the
     # x_creator_subscriptions table + CRUD (mirrors the XHS creators above).
 
-    from openbiliclaw.sources.x_tasks import XCreatorStore, normalize_handle
+    from selfmirror.sources.x_tasks import XCreatorStore, normalize_handle
 
     _x_creator_store: XCreatorStore | None = None
     if hasattr(ctx.database, "conn"):
@@ -13845,7 +13845,7 @@ def create_app(
         """Return the current X source health (ok / cookie / rate-limit / block)."""
         if not hasattr(ctx.database, "conn"):
             return XStatusResponse()
-        from openbiliclaw.storage.x_health import XSourceHealthStore
+        from selfmirror.storage.x_health import XSourceHealthStore
 
         health = XSourceHealthStore(ctx.database).get()
         return XStatusResponse(
@@ -13879,8 +13879,8 @@ def create_app(
         readiness — the D1 conflation the contract exists to remove. The
         ``enabled`` switch stays its own field, never folded back into ``state``.
         """
-        from openbiliclaw.api.source_auth.providers import auth_bangumi
-        from openbiliclaw.runtime.bangumi_producer import (
+        from selfmirror.api.source_auth.providers import auth_bangumi
+        from selfmirror.runtime.bangumi_producer import (
             bangumi_disabled_detail,
             bangumi_source_status,
         )
@@ -13951,8 +13951,8 @@ def create_app(
     def _weibo_status_item(cfg: Any, auth_ctx: Any) -> SourceStatusItem:
         """Combine anonymous auth readiness with the latest local discovery run."""
 
-        from openbiliclaw.api.source_auth.providers import auth_weibo
-        from openbiliclaw.runtime.weibo_producer import weibo_source_status
+        from selfmirror.api.source_auth.providers import auth_weibo
+        from selfmirror.runtime.weibo_producer import weibo_source_status
 
         enabled = bool(getattr(getattr(cfg.sources, "weibo", None), "enabled", False))
         status = (
@@ -14019,13 +14019,13 @@ def create_app(
         re-assembled by ``_bangumi_status_item`` to carry two axes the uniform
         item cannot: a discovery-health ``detail`` and the ``token_state`` chip.
         """
-        from openbiliclaw.api.source_auth.providers import (
+        from selfmirror.api.source_auth.providers import (
             SOURCE_AUTH_PROVIDERS,
             SourceAuthContext,
             source_enabled,
             source_feed_paused,
         )
-        from openbiliclaw.config import load_config
+        from selfmirror.config import load_config
 
         cfg = _pin_active_runtime_config(load_config())
         auth_ctx = SourceAuthContext(cfg=cfg, database=ctx.database)
@@ -14084,8 +14084,8 @@ def create_app(
         error, and turning it into one would strip the frontends of the message
         explaining what to do about it.
         """
-        from openbiliclaw.api.source_auth.verify import verify_source
-        from openbiliclaw.config import load_config
+        from selfmirror.api.source_auth.verify import verify_source
+        from selfmirror.config import load_config
 
         try:
             result = await verify_source(
@@ -14125,12 +14125,12 @@ def create_app(
 
     def _source_auth_contract(slug: str) -> SourceAuthContract:
         """Freshly recomputed contract for *slug*, or an empty one if unknown."""
-        from openbiliclaw.api.source_auth.contract import SourceAuthContract
-        from openbiliclaw.api.source_auth.providers import (
+        from selfmirror.api.source_auth.contract import SourceAuthContract
+        from selfmirror.api.source_auth.providers import (
             SOURCE_AUTH_PROVIDERS,
             SourceAuthContext,
         )
-        from openbiliclaw.config import load_config
+        from selfmirror.config import load_config
 
         provider = SOURCE_AUTH_PROVIDERS.get(slug)
         if provider is None:
@@ -14165,9 +14165,9 @@ def create_app(
         it — the failure this whole path was tightened to prevent, arriving one
         indirection later.
         """
-        from openbiliclaw.api.source_auth.probe_cache import LIVE_PROBES
-        from openbiliclaw.api.source_auth.verify import note_credential_changed
-        from openbiliclaw.api.source_auth.write import credential_fingerprint
+        from selfmirror.api.source_auth.probe_cache import LIVE_PROBES
+        from selfmirror.api.source_auth.verify import note_credential_changed
+        from selfmirror.api.source_auth.write import credential_fingerprint
 
         if verdict.checked == "live_probe" and not verdict.from_cache:
             recorded = LIVE_PROBES.record(
@@ -14217,14 +14217,14 @@ def create_app(
         trip — the receipt is free, which is why there is no longer any excuse
         for the silent save that spec D7 complained about.
         """
-        from openbiliclaw.api.source_auth.write import (
+        from selfmirror.api.source_auth.write import (
             CredentialWriteOutcome,
             cookie_names,
             current_credential,
             persist_credential,
             validate_credential,
         )
-        from openbiliclaw.config import load_config
+        from selfmirror.config import load_config
 
         cfg = _pin_active_runtime_config(load_config())
         verdict = await validate_credential(slug, kind, value, cfg=cfg)
@@ -14282,7 +14282,7 @@ def create_app(
             # producer's is_ready() gate stays False forever, so discovery never
             # retries even though auth is now fixed.
             with suppress(Exception):
-                from openbiliclaw.storage.x_health import XSourceHealthStore
+                from selfmirror.storage.x_health import XSourceHealthStore
 
                 XSourceHealthStore(ctx.database).clear_relogin_block()
 
@@ -14342,8 +14342,8 @@ def create_app(
         has to render, and turning it into a 4xx would leave the frontends
         parsing error bodies to find the message explaining what to fix.
         """
-        from openbiliclaw.api.source_auth.contract import SourceAuthContract
-        from openbiliclaw.api.source_auth.providers import SOURCE_AUTH_PROVIDERS
+        from selfmirror.api.source_auth.contract import SourceAuthContract
+        from selfmirror.api.source_auth.providers import SOURCE_AUTH_PROVIDERS
 
         if slug not in SOURCE_AUTH_PROVIDERS:
             raise HTTPException(status_code=404, detail=f"unknown source: {slug}")
@@ -14421,14 +14421,14 @@ def create_app(
         bulk credential export.
         """
         del reveal_keys
-        from openbiliclaw.api.source_auth.forms import (
+        from selfmirror.api.source_auth.forms import (
             build_credential_form,
             credential_summary,
         )
-        from openbiliclaw.bilibili.auth import resolve_runtime_cookie
-        from openbiliclaw.config import load_config
-        from openbiliclaw.sources.douyin_auth import resolve_douyin_cookie
-        from openbiliclaw.sources.reddit_tasks import rdt_credential_cookie_names
+        from selfmirror.bilibili.auth import resolve_runtime_cookie
+        from selfmirror.config import load_config
+        from selfmirror.sources.douyin_auth import resolve_douyin_cookie
+        from selfmirror.sources.reddit_tasks import rdt_credential_cookie_names
 
         cfg = _pin_active_runtime_config(load_config())
         srcs = cfg.sources
@@ -14483,7 +14483,7 @@ def create_app(
             )
             if not token_set or not hasattr(ctx.database, "conn"):
                 return base
-            from openbiliclaw.runtime.bangumi_producer import _read_token_rejection
+            from selfmirror.runtime.bangumi_producer import _read_token_rejection
 
             try:
                 rejected = _read_token_rejection(ctx.database) is not None
@@ -14584,7 +14584,7 @@ def create_app(
     # §"Module Isolation from XHS". Different table (dy_tasks),
     # different queue class, different fail isolation.
 
-    from openbiliclaw.sources.dy_tasks import (
+    from selfmirror.sources.dy_tasks import (
         DyTaskQueue,
         dy_bootstrap_video_key,
         dy_bootstrap_videos_to_events,
@@ -14661,7 +14661,7 @@ def create_app(
             # dispatcher does not enter a resend loop.
             return {"ok": True, "ignored": True}
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -14784,37 +14784,37 @@ def create_app(
         return await _kick_source_task("x")
 
     # ── YouTube bootstrap endpoints ────────────────────────────────
-    from openbiliclaw.sources.linuxdo_tasks import (
+    from selfmirror.sources.linuxdo_tasks import (
         LinuxdoTaskQueue,
         LinuxdoTaskResultValidationError,
         linuxdo_bootstrap_item_key,
         linuxdo_bootstrap_items_to_events,
         validate_linuxdo_task_result,
     )
-    from openbiliclaw.sources.reddit_tasks import (
+    from selfmirror.sources.reddit_tasks import (
         RedditTaskQueue,
         reddit_bootstrap_item_key,
         reddit_items_to_events,
     )
-    from openbiliclaw.sources.v2ex_affinity import V2EXNodeAffinityStore
-    from openbiliclaw.sources.v2ex_tasks import (
+    from selfmirror.sources.v2ex_affinity import V2EXNodeAffinityStore
+    from selfmirror.sources.v2ex_tasks import (
         V2EXFavoriteSnapshotStore,
         V2EXTaskQueue,
         v2ex_bootstrap_item_key,
         v2ex_bootstrap_items_to_events,
         v2ex_snapshot_effects_to_events,
     )
-    from openbiliclaw.sources.weibo_tasks import (
+    from selfmirror.sources.weibo_tasks import (
         WeiboTaskQueue,
         weibo_bootstrap_item_key,
         weibo_bootstrap_items_to_events,
     )
-    from openbiliclaw.sources.yt_tasks import (
+    from selfmirror.sources.yt_tasks import (
         YtTaskQueue,
         yt_bootstrap_item_key,
         yt_bootstrap_items_to_events,
     )
-    from openbiliclaw.sources.zhihu_tasks import (
+    from selfmirror.sources.zhihu_tasks import (
         ZhihuTaskQueue,
         zhihu_bootstrap_item_key,
         zhihu_bootstrap_items_to_events,
@@ -14904,7 +14904,7 @@ def create_app(
         profile_update = bool(task_payload.get("profile_update"))
         incremental = bool(task_payload.get("incremental"))
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -15049,7 +15049,7 @@ def create_app(
         smoke_only = bool(task_payload.get("smoke_only"))
         profile_rebuild = bool(task_payload.get("profile_rebuild"))
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -15098,16 +15098,16 @@ def create_app(
         if canonical_debug.get("logged_in") is True:
             observed_username = str(canonical_debug.get("username", "") or "").strip()
             if observed_username and hasattr(ctx.database, "set_v2ex_browser_identity"):
-                from openbiliclaw.sources.v2ex_client import validate_v2ex_username
+                from selfmirror.sources.v2ex_client import validate_v2ex_username
 
                 with suppress(ValueError):
                     ctx.database.set_v2ex_browser_identity(
                         validate_v2ex_username(observed_username),
                         evidence="observed",
                     )
-        from openbiliclaw.api.source_auth.probe_cache import LIVE_PROBES
-        from openbiliclaw.config import load_config
-        from openbiliclaw.sources.v2ex_identity import resolve_v2ex_identity_state
+        from selfmirror.api.source_auth.probe_cache import LIVE_PROBES
+        from selfmirror.config import load_config
+        from selfmirror.sources.v2ex_identity import resolve_v2ex_identity_state
 
         identity_resolution = resolve_v2ex_identity_state(
             cfg=load_config(),
@@ -15344,7 +15344,7 @@ def create_app(
         profile_update = bool(task_payload.get("profile_update"))
         incremental = bool(task_payload.get("incremental"))
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -15423,7 +15423,7 @@ def create_app(
             return Response(status_code=204)
         runtime_config = getattr(ctx, "config", None)
         if runtime_config is None:
-            from openbiliclaw.config import load_config
+            from selfmirror.config import load_config
 
             runtime_config = load_config()
         weibo_cfg = getattr(
@@ -15481,7 +15481,7 @@ def create_app(
                 task_payload = parsed_payload
         profile_update = bool(task_payload.get("profile_update"))
         incremental = bool(task_payload.get("incremental"))
-        from openbiliclaw.sources.weibo_tasks import (
+        from selfmirror.sources.weibo_tasks import (
             is_weibo_account_key,
             weibo_account_key,
         )
@@ -15520,7 +15520,7 @@ def create_app(
             if bound and bound != account_key:
                 raise HTTPException(status_code=409, detail="weibo_account_switch_requires_reset")
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -15687,7 +15687,7 @@ def create_app(
         profile_update = bool(task_payload.get("profile_update"))
         incremental = bool(task_payload.get("incremental"))
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -15923,7 +15923,7 @@ def create_app(
         if str(task.get("status", "")).strip() in {"completed", "failed"}:
             return {"ok": True, "ignored": True}
 
-        from openbiliclaw.sources.task_result_protocol import (
+        from selfmirror.sources.task_result_protocol import (
             parse_task_result,
             staged_terminal_status,
         )
@@ -16182,12 +16182,12 @@ def create_app(
         reason_override: str | None = None,
         detail_override: str | None = None,
     ) -> AutostartStatusOut:
-        from openbiliclaw.runtime import autostart
-        from openbiliclaw.runtime.autostart.guards import (
+        from selfmirror.runtime import autostart
+        from selfmirror.runtime.autostart.guards import (
             active_env_managed_inputs,
             autostart_shadowed,
         )
-        from openbiliclaw.runtime.ollama_supervisor import (
+        from selfmirror.runtime.ollama_supervisor import (
             effective_ollama_endpoint,
             is_loopback,
             ollama_required,
@@ -16251,7 +16251,7 @@ def create_app(
 
     @app.get("/api/autostart-status", response_model=AutostartStatusOut)
     def autostart_status(request: Request) -> AutostartStatusOut:
-        from openbiliclaw.config import load_config
+        from selfmirror.config import load_config
 
         cfg = load_config()
         return _autostart_status_out(request, cfg)
@@ -16260,11 +16260,11 @@ def create_app(
     async def autostart_apply(
         payload: AutostartApplyIn, request: Request
     ) -> AutostartStatusOut | JSONResponse:
-        from openbiliclaw.config import _default_config_path as _cfg_path
-        from openbiliclaw.config import load_config as _load
-        from openbiliclaw.config import save_config as _save
-        from openbiliclaw.runtime import autostart
-        from openbiliclaw.runtime.autostart.guards import active_env_managed_inputs
+        from selfmirror.config import _default_config_path as _cfg_path
+        from selfmirror.config import load_config as _load
+        from selfmirror.config import save_config as _save
+        from selfmirror.runtime import autostart
+        from selfmirror.runtime.autostart.guards import active_env_managed_inputs
 
         cfg = _load()
         if not _get_auth_gate().is_trusted_local(request):
@@ -16426,15 +16426,15 @@ def create_app(
         # Douyin / X store their cookie in data/*.json (env override wins),
         # not in config.toml — resolve here so the settings pages can show
         # the live credential exactly like the Bilibili card does.
-        from openbiliclaw.config import (
+        from selfmirror.config import (
             _normalize_pool_source_shares as _normalized_config_pool_source_shares,
         )
-        from openbiliclaw.config import (
+        from selfmirror.config import (
             effective_llm_default_chain,
             effective_llm_instances,
             effective_llm_routes,
         )
-        from openbiliclaw.sources.douyin_auth import resolve_douyin_cookie
+        from selfmirror.sources.douyin_auth import resolve_douyin_cookie
 
         dy_cookie = ""
         with suppress(Exception):
@@ -16850,7 +16850,7 @@ def create_app(
         Masked echoes are already treated as "keep existing" by PUT /api/config.
         """
         del reveal_keys
-        from openbiliclaw.config import (
+        from selfmirror.config import (
             _collect_config_issues,
             load_config,
         )
@@ -16869,7 +16869,7 @@ def create_app(
 
     def _migration_request_allowed(request: Request) -> bool:
         """Require real loopback transport plus same-origin browser intent."""
-        from openbiliclaw import auth_core
+        from selfmirror import auth_core
 
         gate = _get_auth_gate()
         if auth_core.is_extension_origin(request.headers.get("origin")):
@@ -16935,8 +16935,8 @@ def create_app(
                 status_code=409,
                 detail={"code": "config_busy", "message": "配置正在保存，请稍后再导出。"},
             )
-        from openbiliclaw.config import load_config as load_migration_config
-        from openbiliclaw.storage.migration import MigrationError, create_migration_archive
+        from selfmirror.config import load_config as load_migration_config
+        from selfmirror.storage.migration import MigrationError, create_migration_archive
 
         frontend = (payload or {}).get("frontend")
         if frontend is not None and not isinstance(frontend, dict):
@@ -17008,7 +17008,7 @@ def create_app(
         try:
             return _MigrationArchiveStreamingResponse(
                 _stream_archive(),
-                media_type="application/vnd.openbiliclaw.backup+zip",
+                media_type="application/vnd.selfmirror.backup+zip",
                 cleanup_directory=archive_path.parent,
                 release_callback=_MIGRATION_TRANSFER_LOCK.release,
                 # A disconnect can happen before the body iterator is entered, so
@@ -17046,8 +17046,8 @@ def create_app(
                     "message": "导入需要明确确认替换当前用户数据。",
                 },
             )
-        from openbiliclaw.config import load_config as load_migration_config
-        from openbiliclaw.storage.migration import (
+        from selfmirror.config import load_config as load_migration_config
+        from selfmirror.storage.migration import (
             MAX_MIGRATION_ARCHIVE_BYTES,
             MigrationError,
             stage_migration_archive,
@@ -17096,7 +17096,7 @@ def create_app(
         app.state.migration_import_phase = "uploading"
         upload_dir: _MigrationPath | None = None
         try:
-            upload_dir = _MigrationPath(tempfile.mkdtemp(prefix="openbiliclaw-import-upload-"))
+            upload_dir = _MigrationPath(tempfile.mkdtemp(prefix="selfmirror-import-upload-"))
             upload_path = upload_dir / "upload.obcbackup"
             received = 0
             with upload_path.open("xb") as handle:
@@ -17181,7 +17181,7 @@ def create_app(
     def get_user_migration_status(request: Request) -> JSONResponse:
         """Return pending/last restore status to the local settings page."""
         _require_local_migration_request(request, allow_during_init=True)
-        from openbiliclaw.storage.migration import migration_status
+        from selfmirror.storage.migration import migration_status
 
         status = migration_status()
         active_request_id = str(app.state.migration_import_request_id or "")
@@ -17205,7 +17205,7 @@ def create_app(
     async def cancel_user_migration(request: Request) -> JSONResponse:
         """Cancel the staged restore while leaving current user data untouched."""
         _require_local_migration_request(request, allow_during_init=True)
-        from openbiliclaw.storage.migration import MigrationError, cancel_pending_migration
+        from selfmirror.storage.migration import MigrationError, cancel_pending_migration
 
         if _MIGRATION_TRANSFER_LOCK.locked():
             raise HTTPException(
@@ -17261,7 +17261,7 @@ def create_app(
         """Apply the LLM subset of a config update to an in-memory config."""
         if not isinstance(llm_data, dict):
             return
-        from openbiliclaw.config import (
+        from selfmirror.config import (
             _LLM_PROVIDER_DISPLAY_NAMES,
             LLMInstanceConfig,
             _normalize_llm_concurrency,
@@ -17698,9 +17698,9 @@ def create_app(
         *,
         instance_id: str,
     ) -> ConfigModelDiscoveryResponse:
-        from openbiliclaw.config import effective_llm_instances
-        from openbiliclaw.llm.openai_provider import OpenAIProvider
-        from openbiliclaw.llm.registry import _build_instance_provider
+        from selfmirror.config import effective_llm_instances
+        from selfmirror.llm.openai_provider import OpenAIProvider
+        from selfmirror.llm.registry import _build_instance_provider
 
         started = time.perf_counter()
         target_instance_id = str(instance_id or "").strip().lower()
@@ -17796,9 +17796,9 @@ def create_app(
         kind: Literal["llm", "llm_instance", "llm_chain", "llm_fallback"] = "llm",
         instance_id: str = "",
     ) -> ConfigServiceProbeResponse:
-        from openbiliclaw.config import effective_llm_default_chain
-        from openbiliclaw.llm.base import LLM_CONNECTIVITY_PROBE_MAX_TOKENS
-        from openbiliclaw.llm.registry import build_llm_registry
+        from selfmirror.config import effective_llm_default_chain
+        from selfmirror.llm.base import LLM_CONNECTIVITY_PROBE_MAX_TOKENS
+        from selfmirror.llm.registry import build_llm_registry
 
         started = time.perf_counter()
         is_fallback = kind == "llm_fallback"
@@ -17968,8 +17968,8 @@ def create_app(
             )
 
     async def _probe_embedding_config(cfg: Any) -> ConfigServiceProbeResponse:
-        from openbiliclaw.llm.base import LLMRegistry
-        from openbiliclaw.llm.registry import build_embedding_service
+        from selfmirror.llm.base import LLMRegistry
+        from selfmirror.llm.registry import build_embedding_service
 
         started = time.perf_counter()
         emb_cfg = getattr(getattr(cfg, "llm", None), "embedding", None)
@@ -18028,7 +18028,7 @@ def create_app(
         """
         import httpx
 
-        from openbiliclaw.network import httpx_kwargs_for
+        from selfmirror.network import httpx_kwargs_for
 
         started = time.perf_counter()
         try:
@@ -18083,7 +18083,7 @@ def create_app(
         """Probe submitted LLM / embedding / proxy settings without saving config.toml."""
         from copy import deepcopy
 
-        from openbiliclaw.config import (
+        from selfmirror.config import (
             load_config,
             normalize_outbound_proxy,
             normalize_outbound_proxy_mode,
@@ -18134,7 +18134,7 @@ def create_app(
         """List models for one submitted instance without saving config.toml."""
         from copy import deepcopy
 
-        from openbiliclaw.config import load_config
+        from selfmirror.config import load_config
 
         cfg = deepcopy(load_config())
         update = payload.config if isinstance(payload.config, dict) else {}
@@ -18151,7 +18151,7 @@ def create_app(
         After persisting, the backend attempts to rebuild all swappable
         runtime components so the new settings take effect immediately.
         """
-        from openbiliclaw.config import (
+        from selfmirror.config import (
             _DEFAULT_ADMISSION_MIN_SCORE,
             _DEFAULT_CANDIDATE_EVAL_CONCURRENCY,
             _DEFAULT_COPY_READY_TARGET_COUNT,
@@ -18260,7 +18260,7 @@ def create_app(
             ``verified`` when saved from the extension and ``unverified`` when
             saved from the settings page.
             """
-            from openbiliclaw.api.source_auth.write import validate_credential
+            from selfmirror.api.source_auth.write import validate_credential
 
             verdict = await validate_credential(slug, "cookie", value, cfg=cfg)
             if verdict.ok:
@@ -18304,7 +18304,7 @@ def create_app(
                     new_cookie.strip() or not cfg.bilibili.cookie.strip()
                 ):
                     if new_cookie.strip():
-                        from openbiliclaw.api.source_auth.write import current_credential
+                        from selfmirror.api.source_auth.write import current_credential
 
                         bili_verdict = await _gate_credential("bilibili", new_cookie.strip())
                         # Read before the assignment below, or "did this change"
@@ -18380,7 +18380,7 @@ def create_app(
                         # Manual paste from the settings pages. Routed to
                         # data/douyin_cookie.json (same store the extension
                         # auto-sync writes) — secrets never land in config.toml.
-                        from openbiliclaw.sources.douyin_auth import (
+                        from selfmirror.sources.douyin_auth import (
                             DouyinCookieManager,
                             resolve_douyin_cookie,
                         )
@@ -18474,7 +18474,7 @@ def create_app(
                                     # without them no longer reaches this point.
                                     if hasattr(ctx.database, "conn"):
                                         with suppress(Exception):
-                                            from openbiliclaw.storage.x_health import (
+                                            from selfmirror.storage.x_health import (
                                                 XSourceHealthStore,
                                             )
 
@@ -18531,7 +18531,7 @@ def create_app(
                         cfg.sources.reddit.enabled = _as_bool(reddit_data["enabled"])
                     if "backend" in reddit_data:
                         backend = str(reddit_data["backend"] or "").strip().lower()
-                        if backend in {"openbiliclaw", "plugin"}:
+                        if backend in {"selfmirror", "plugin"}:
                             backend = "extension"
                         cfg.sources.reddit.backend = (
                             backend if backend in {"extension", "opencli", "rdt", "auto"} else "rdt"
@@ -18541,7 +18541,7 @@ def create_app(
                         # same shape the extension auto-sync endpoint
                         # (POST /api/sources/reddit/cookie) writes; secrets
                         # never land in config.toml.
-                        from openbiliclaw.sources.reddit_tasks import (
+                        from selfmirror.sources.reddit_tasks import (
                             sync_rdt_credential_from_cookie_header,
                         )
 
@@ -18606,7 +18606,7 @@ def create_app(
 
                 bangumi_data = sources_data.get("bangumi")
                 if isinstance(bangumi_data, dict):
-                    from openbiliclaw.sources.bangumi_client import (
+                    from selfmirror.sources.bangumi_client import (
                         validate_bangumi_access_token,
                         validate_bangumi_username,
                     )
@@ -18638,7 +18638,7 @@ def create_app(
                             # live BEFORE persisting so a bad/expired token is
                             # rejected with its real cause (project rule 7), and
                             # record the /v0/me username as the source of truth.
-                            from openbiliclaw.sources.bangumi_client import (
+                            from selfmirror.sources.bangumi_client import (
                                 BangumiAPIError,
                                 resolve_access_token_identity,
                             )
@@ -18678,7 +18678,7 @@ def create_app(
                         # Whether re-armed with a validated token or cleared, any
                         # stale rejection marker no longer applies.
                         if hasattr(ctx.database, "conn"):
-                            from openbiliclaw.runtime.bangumi_producer import (
+                            from selfmirror.runtime.bangumi_producer import (
                                 _clear_token_rejection,
                             )
 
@@ -18796,12 +18796,12 @@ def create_app(
                         setattr(cfg.sources.linuxdo, key, value)
                 v2ex_data = sources_data.get("v2ex")
                 if isinstance(v2ex_data, dict):
-                    from openbiliclaw.config import (
+                    from selfmirror.config import (
                         V2EX_CONFIG_INTEGER_LIMITS,
                         normalize_v2ex_list_field,
                         normalize_v2ex_source_config,
                     )
-                    from openbiliclaw.sources.v2ex_client import (
+                    from selfmirror.sources.v2ex_client import (
                         V2EXAPIError,
                         V2EXClient,
                         member_username,
@@ -19459,8 +19459,8 @@ def create_app(
         payload: SourceShareSuggestionIn | None = None,
     ) -> SourceShareSuggestionResponse:
         """Suggest pool source shares from observed platform event counts."""
-        from openbiliclaw.config import load_config
-        from openbiliclaw.runtime.source_policy import (
+        from selfmirror.config import load_config
+        from selfmirror.runtime.source_policy import (
             source_enabled_map,
             suggest_pool_source_shares,
         )
@@ -19636,7 +19636,7 @@ def create_app(
         app.mount("/setup", _StaticFiles(directory=_setup_dir, html=True), name="setup-wizard")
 
     # ── SelfMirror: Mirror Dialogue & Privacy-First ──────────────────────
-    from openbiliclaw.self_mirror.router import router as _self_mirror_router
+    from selfmirror.self_mirror.router import router as _self_mirror_router
 
     app.include_router(_self_mirror_router)
 

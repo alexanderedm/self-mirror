@@ -24,8 +24,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from openbiliclaw.llm.base import LLMResponse
-    from openbiliclaw.llm.service import LLMService
+    from selfmirror.llm.base import LLMResponse
+    from selfmirror.llm.service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -324,13 +324,13 @@ class InitScanner:
         Uses the existing build_soul_profile_prompt from prompts.py but
         replaces the history input with scanned AI tool session content.
         """
-        from openbiliclaw.llm.json_utils import (
+        from selfmirror.llm.json_utils import (
             DEFAULT_STRUCTURED_MAX_TOKENS,
             format_parse_failure,
             parse_llm_json_tolerant,
         )
-        from openbiliclaw.llm.prompts import build_soul_profile_prompt
-        from openbiliclaw.llm.task_options import without_core_memory_kwargs
+        from selfmirror.llm.prompts import build_soul_profile_prompt
+        from selfmirror.llm.task_options import without_core_memory_kwargs
 
         if scan_result is None:
             scan_result = self.scan()

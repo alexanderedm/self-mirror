@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## 项目结构与模块组织
-主代码位于 `src/openbiliclaw/`：`agent/` 负责编排，`bilibili/` 负责站点接入，`memory/`、`soul/`、`discovery/`、`recommendation/` 分别承载理解、发现与推荐链路。测试位于 `tests/`，命名采用 `test_*.py`。设计和路线文档集中在 `docs/`，其中 `docs/v0.1-todolist.md` 是当前 v0.1 的开发主线。浏览器插件代码单独放在 `extension/`，其中 `extension/src/` 为脚本源码，`extension/popup/` 为弹窗页面。
+主代码位于 `src/selfmirror/`：`agent/` 负责编排，`bilibili/` 负责站点接入，`memory/`、`soul/`、`discovery/`、`recommendation/` 分别承载理解、发现与推荐链路。测试位于 `tests/`，命名采用 `test_*.py`。设计和路线文档集中在 `docs/`，其中 `docs/v0.1-todolist.md` 是当前 v0.1 的开发主线。浏览器插件代码单独放在 `extension/`，其中 `extension/src/` 为脚本源码，`extension/popup/` 为弹窗页面。
 
 ## 构建、测试与开发命令
 先创建虚拟环境并安装开发依赖：`pip install -e ".[dev]"`。常用检查命令如下：
@@ -11,10 +11,10 @@ ruff format src/ tests/
 ruff check src/ tests/
 mypy src/
 pytest
-pytest --cov=openbiliclaw
+pytest --cov=selfmirror
 ```
 
-本地体验 CLI 可使用 `openbiliclaw start`、`openbiliclaw profile`、`openbiliclaw recommend`。如修改配置相关逻辑，请同步验证 `openbiliclaw config-show`。`extension/` 当前未声明独立包管理脚本；若修改插件，请在 PR 中写明手动验证步骤。
+本地体验 CLI 可使用 `selfmirror start`、`selfmirror profile`、`selfmirror recommend`。如修改配置相关逻辑，请同步验证 `selfmirror config-show`。`extension/` 当前未声明独立包管理脚本；若修改插件，请在 PR 中写明手动验证步骤。
 
 ## 开发顺序与配置约定
 v0.1 开发建议以 `docs/v0.1-todolist.md` 为准，按“连接 -> 理解 -> 发现 -> 推荐 -> 学习 -> 插件 -> 稳定交付”的里程碑顺序推进，避免跳过底层依赖直接做上层体验。配置样例使用 `config.example.toml`；本地调试时基于它生成 `config.toml`，并仅在本机保存 API Key、Cookie 等敏感信息。

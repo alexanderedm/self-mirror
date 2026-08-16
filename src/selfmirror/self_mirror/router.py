@@ -31,10 +31,10 @@ from .models import (
 )
 
 if TYPE_CHECKING:
-    from openbiliclaw.api.runtime_context import RuntimeContext
-    from openbiliclaw.llm.service import LLMService
-    from openbiliclaw.memory.manager import MemoryManager
-    from openbiliclaw.soul.profile import OnionProfile
+    from selfmirror.api.runtime_context import RuntimeContext
+    from selfmirror.llm.service import LLMService
+    from selfmirror.memory.manager import MemoryManager
+    from selfmirror.soul.profile import OnionProfile
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ async def ingest_events(request: Request, batch: MirrorEventBatchIn) -> MirrorEv
     memory = _get_memory_manager(request)
 
     try:
-        from openbiliclaw.soul.pipeline import ProfileSignal, SignalType
+        from selfmirror.soul.pipeline import ProfileSignal, SignalType
     except ImportError:
         logger.warning("Pipeline not available, events not processed")
         return MirrorEventBatchResponse(received=len(batch.events), stored=0)
@@ -185,7 +185,7 @@ async def mirror_chat(request: Request, input: MirrorChatIn) -> MirrorChatOut:
     llm = _get_llm_service(request)
 
     if input.mode == MirrorMode.FREE:
-        from openbiliclaw.soul.mirror_dialogue import MirrorDialogue
+        from selfmirror.soul.mirror_dialogue import MirrorDialogue
 
         dialogue = MirrorDialogue(mode=input.mode)
         reply = await dialogue.respond(
@@ -194,7 +194,7 @@ async def mirror_chat(request: Request, input: MirrorChatIn) -> MirrorChatOut:
             profile=profile,
         )
     else:
-        from openbiliclaw.soul.dialogue import SocraticDialogue
+        from selfmirror.soul.dialogue import SocraticDialogue
 
         ctx = _get_ctx(request)
         socratic = SocraticDialogue(
@@ -227,7 +227,7 @@ async def get_guided_starter(request: Request) -> GuidedStarterOut:
     Based on the current profile state, generates a specific,
     deeply probing question that helps the user reflect.
     """
-    from openbiliclaw.soul.mirror_dialogue import generate_guided_starter
+    from selfmirror.soul.mirror_dialogue import generate_guided_starter
 
     profile = await _get_profile(request)
     llm = _get_llm_service(request)
@@ -342,7 +342,7 @@ async def init_scan() -> InitScanResult:
     This does NOT generate a profile — it only scans and reports.
     Call POST /api/mirror/init-build after reviewing to generate the profile.
     """
-    from openbiliclaw.soul.init_scanner import InitScanner
+    from selfmirror.soul.init_scanner import InitScanner
 
     scanner = InitScanner()
     result = scanner.scan(max_sessions_per_source=50)
@@ -366,7 +366,7 @@ async def init_build(request: Request) -> ProfileSummaryOut:
     Scans local AI tool directories, then uses the LLM to generate
     an initial portrait based on the session content.
     """
-    from openbiliclaw.soul.init_scanner import InitScanner
+    from selfmirror.soul.init_scanner import InitScanner
 
     scanner = InitScanner()
     result = scanner.scan(max_sessions_per_source=50)

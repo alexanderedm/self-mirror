@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Release](https://img.shields.io/github/v/release/whiteguo233/OpenBiliClaw?filter=openbiliclaw-v*&style=flat-square&label=Release&color=success)](https://github.com/whiteguo233/OpenBiliClaw/releases/latest)
+[![Release](https://img.shields.io/github/v/release/whiteguo233/OpenBiliClaw?filter=selfmirror-v*&style=flat-square&label=Release&color=success)](https://github.com/whiteguo233/OpenBiliClaw/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/whiteguo233/OpenBiliClaw/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/whiteguo233/OpenBiliClaw/actions/workflows/ci.yml)
 [![Discussion](https://img.shields.io/badge/LINUX_DO-Discussion-orange?style=flat-square&logo=discourse)](https://linux.do/t/topic/1978894)
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/cdfjfkdjjhdaccbldipkjhpibnfbiamg?style=flat-square&label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white&color=4285F4)](https://chromewebstore.google.com/detail/cdfjfkdjjhdaccbldipkjhpibnfbiamg)
@@ -18,7 +18,7 @@
 
 > ### 🆕 Big update: OpenBiliClaw now runs inside DeepSeek Harness
 >
-> New **DSH client plugin** — install OpenBiliClaw into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness): a persistent fourth column (Recommendations / Library / Chat / Profile / Settings) in the DSH web GUI, plus 22 Agent Bridge tools so agents can read recommendations, answer probes, and close the learning loop — browse cross-platform personalized content while you work in DSH. → [`github.com/whiteguo233/dsh-openbiliclaw`](https://github.com/whiteguo233/dsh-openbiliclaw)
+> New **DSH client plugin** — install OpenBiliClaw into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness): a persistent fourth column (Recommendations / Library / Chat / Profile / Settings) in the DSH web GUI, plus 22 Agent Bridge tools so agents can read recommendations, answer probes, and close the learning loop — browse cross-platform personalized content while you work in DSH. → [`github.com/whiteguo233/dsh-selfmirror`](https://github.com/whiteguo233/dsh-selfmirror)
 >
 > 📱 Want a native app? The Flutter mobile client (Android / iOS / Web / desktop) lives in the separate repo [`OpenBiliClaw-mobile`](https://github.com/whiteguo233/OpenBiliClaw-mobile): recommendations, chat, profile, favorites / watch-later / 30-day history — all talking to the same local backend.
 
@@ -91,7 +91,7 @@ Core behavior, recommendation, and dialogue data lives in SQLite on your disk; c
 
 ## 📸 Feature Preview
 
-Five core surfaces: the browser extension handles in-page interaction and login sessions, the Desktop Web (`/web`) gives you a big-screen recommendation home, the Mobile Web (`/m`) is built for phones, a native Flutter client ([OpenBiliClaw-mobile](https://github.com/whiteguo233/OpenBiliClaw-mobile), separate repo) covers Android / iOS / Web / desktop, and a [DSH client plugin](https://github.com/whiteguo233/dsh-openbiliclaw) brings the same panels into the DSH web GUI as a fourth column (plus 22 Agent Bridge tools). Every non-extension surface only calls your local API — cookie sync and platform tasks still run through the extension.
+Five core surfaces: the browser extension handles in-page interaction and login sessions, the Desktop Web (`/web`) gives you a big-screen recommendation home, the Mobile Web (`/m`) is built for phones, a native Flutter client ([OpenBiliClaw-mobile](https://github.com/whiteguo233/OpenBiliClaw-mobile), separate repo) covers Android / iOS / Web / desktop, and a [DSH client plugin](https://github.com/whiteguo233/dsh-selfmirror) brings the same panels into the DSH web GUI as a fourth column (plus 22 Agent Bridge tools). Every non-extension surface only calls your local API — cookie sync and platform tasks still run through the extension.
 
 <table>
   <tr>
@@ -229,12 +229,12 @@ For most users, setup is four steps: install the extension, ask an AI coding age
 
 The extension is the main interface. It shows the sidebar on supported sites, records feedback, and runs bounded read-only tasks for sources including Zhihu, Reddit, Linux.do, V2EX, and Weibo. Linux.do, V2EX, and Weibo task tabs are isolated from passive behavior collection; Weibo public discovery still runs independently in the backend.
 
-Built on Manifest V3, the extension works in any Chrome-compatible browser — **Chrome, Edge, Brave, Arc, Vivaldi, Opera**, and more; a **Safari (macOS)** build is also provided. Releases automatically attach `openbiliclaw-extension-v*-safari.dmg` (Developer ID-signed and notarized when Apple credentials are configured, otherwise an ad-hoc experimental build that requires Safari's "Allow Unsigned Extensions"), and you can also convert the local build to an Xcode project via Apple's `safari-web-extension-converter` (see the [Safari build guide](docs/safari-extension-build.md)).
+Built on Manifest V3, the extension works in any Chrome-compatible browser — **Chrome, Edge, Brave, Arc, Vivaldi, Opera**, and more; a **Safari (macOS)** build is also provided. Releases automatically attach `selfmirror-extension-v*-safari.dmg` (Developer ID-signed and notarized when Apple credentials are configured, otherwise an ad-hoc experimental build that requires Safari's "Allow Unsigned Extensions"), and you can also convert the local build to an Xcode project via Apple's `safari-web-extension-converter` (see the [Safari build guide](docs/safari-extension-build.md)).
 
 **Recommended · download the latest build from the Latest Release aggregate page** (gets the newest features and fixes — the Chrome Web Store listing usually lags by a few days to a couple of weeks due to review scheduling):
 
-1. Open [OpenBiliClaw Latest Release](https://github.com/whiteguo233/OpenBiliClaw/releases/latest), the newest user-facing aggregate `openbiliclaw-v*` release
-2. Chrome / Edge / Brave users download `openbiliclaw-extension-v*.zip`; Firefox users install `openbiliclaw-extension-v*-firefox.xpi` when it is present, otherwise download `openbiliclaw-extension-v*-firefox.zip` and load it temporarily through `about:debugging`; Safari (macOS) users download `openbiliclaw-extension-v*-safari.dmg`, launch the app once, then enable OpenBiliClaw in Safari Settings → Extensions
+1. Open [OpenBiliClaw Latest Release](https://github.com/whiteguo233/OpenBiliClaw/releases/latest), the newest user-facing aggregate `selfmirror-v*` release
+2. Chrome / Edge / Brave users download `selfmirror-extension-v*.zip`; Firefox users install `selfmirror-extension-v*-firefox.xpi` when it is present, otherwise download `selfmirror-extension-v*-firefox.zip` and load it temporarily through `about:debugging`; Safari (macOS) users download `selfmirror-extension-v*-safari.dmg`, launch the app once, then enable OpenBiliClaw in Safari Settings → Extensions
 3. Open the extensions page (Chrome: `chrome://extensions/` · Edge: `edge://extensions/` · Brave: `brave://extensions/`), enable "Developer mode" in the top right
 4. Chrome / Edge / Brave users drag the downloaded `.zip` file into the page to install; Firefox `.xpi` files install directly, while the temporary zip must be unzipped before loading `manifest.json`
 
@@ -249,20 +249,20 @@ Extension updates depend on the install channel: Chrome Web Store / Edge Add-ons
 
 Firefox uses `sidebar_action` instead of Chrome's `sidePanel`, so releases ship separate Firefox artifacts:
 
-- `openbiliclaw-extension-v*-firefox.xpi`: signed through Mozilla AMO unlisted signing when AMO signing is enabled and credentials are available, installable directly in regular Firefox Release / Beta.
-- `openbiliclaw-extension-v*-firefox.zip`: unsigned development package for `about:debugging` temporary loading or AMO signing input. Installing this zip directly in regular Firefox reports that the add-on could not be verified.
+- `selfmirror-extension-v*-firefox.xpi`: signed through Mozilla AMO unlisted signing when AMO signing is enabled and credentials are available, installable directly in regular Firefox Release / Beta.
+- `selfmirror-extension-v*-firefox.zip`: unsigned development package for `about:debugging` temporary loading or AMO signing input. Installing this zip directly in regular Firefox reports that the add-on could not be verified.
 
 For temporary debugging or source builds:
 
 ```bash
-unzip openbiliclaw-extension-v*-firefox.zip -d openbiliclaw-firefox
+unzip selfmirror-extension-v*-firefox.zip -d selfmirror-firefox
 
 # Or build from source
 git clone https://github.com/whiteguo233/OpenBiliClaw.git
 cd OpenBiliClaw/extension
 npm install
 npm run build:firefox          # writes dist-firefox/
-npm run package:firefox        # also produces unsigned openbiliclaw-extension-v*-firefox.zip
+npm run package:firefox        # also produces unsigned selfmirror-extension-v*-firefox.zip
 # With AMO credentials configured, sign it into the installable XPI:
 # AMO_JWT_ISSUER=... AMO_JWT_SECRET=... npm run sign:firefox:only
 ```
@@ -283,10 +283,10 @@ Most users: the **desktop installer** is the least effort. Want to edit the sour
 
 #### Option A: Download the desktop installer (experimental, easiest)
 
-Grab the installer for your OS from the `openbiliclaw-v*` aggregate [Latest Release](https://github.com/whiteguo233/OpenBiliClaw/releases/latest). The aggregate page shows:
+Grab the installer for your OS from the `selfmirror-v*` aggregate [Latest Release](https://github.com/whiteguo233/OpenBiliClaw/releases/latest). The aggregate page shows:
 
 - Current backend source tag: `backend-v*`
-- Current extension release: `extension-v*`, with `openbiliclaw-extension-v*.zip` / `openbiliclaw-extension-v*-firefox.zip` (Firefox temporary debugging); AMO signing-enabled releases also include `openbiliclaw-extension-v*-firefox.xpi` (regular Firefox install)
+- Current extension release: `extension-v*`, with `selfmirror-extension-v*.zip` / `selfmirror-extension-v*-firefox.zip` (Firefox temporary debugging); AMO signing-enabled releases also include `selfmirror-extension-v*-firefox.xpi` (regular Firefox install)
 - Current desktop installer release: `desktop-v*`, with available `.dmg` / `.exe` assets when the same-version desktop channel has shipped; missing channels are shown as unpublished instead of being backfilled from a previous release
 
 - **macOS**: download the DMG that matches your Mac: `OpenBiliClaw-macos-v*-arm64.dmg` for Apple silicon, or `OpenBiliClaw-macos-v*-x64.dmg` for Intel when the release provides it. The recommended path is to double-click `安装并启动 Install OpenBiliClaw.command`: it verifies the new bundle, quits the old instance, atomically replaces the app in Applications, and launches the version just installed. Traditional drag-and-drop remains available, but upgrades must quit the old version first and reopen the replacement manually.
@@ -332,14 +332,14 @@ By default, log in to [Bilibili](https://www.bilibili.com) and keep Bilibili sel
 The backend serves both a desktop and a mobile Web UI. Neither syncs cookies or crawls pages — they only call your local API.
 
 ```bash
-openbiliclaw start
+selfmirror start
 ```
 
 - **Desktop**: open `http://127.0.0.1:8420/web` (or `http://127.0.0.1:8420/`, auto-redirects). Two-column editorial layout with recommendations, 30-day history, profile, chat, messages, and settings all on one page.
 - **Mobile**: click the phone icon in the extension header to scan the QR code, or type `http://<your-LAN-IP>:8420/m/` manually. Best for browsing recommendations, revisiting 30-day history, profile, and chat on your phone.
 - **Native Flutter client**: download the Android APK (`arm64-v8a` for modern devices, `armeabi-v7a` for older ones) or the unsigned iOS IPA (re-sign with your own Apple account) from the [Latest Release](https://github.com/whiteguo233/OpenBiliClaw-mobile/releases/latest), then enter the backend IP / port in the top-right settings (Web / iOS / macOS default to `127.0.0.1:8420`, the Android emulator to `10.0.2.2:8420`, real devices to your computer's LAN IP, and remote deployments to the server IP with the password gate enabled).
 
-> During `openbiliclaw init`, you'll be asked whether to allow LAN access (default Y). If you chose N or want to change it later, edit `[api].host` in `config.toml` (`0.0.0.0` = LAN-reachable over available IPv4 and IPv6, `127.0.0.1` = local only). QR links prefer IPv4 and automatically use a bracketed IPv6 literal when IPv4 is unavailable.
+> During `selfmirror init`, you'll be asked whether to allow LAN access (default Y). If you chose N or want to change it later, edit `[api].host` in `config.toml` (`0.0.0.0` = LAN-reachable over available IPv4 and IPv6, `127.0.0.1` = local only). QR links prefer IPv4 and automatically use a bracketed IPv6 literal when IPv4 is unavailable.
 
 After opening `/m/`, save it as a home-screen shortcut: on iPhone / iPad, use Safari's Share menu and choose "Add to Home Screen"; on Android Chrome / Chromium browsers, use the menu item "Install app" or "Add to Home screen". LAN HTTP may only create a shortcut in some Android browsers; full PWA install prompts are more reliable behind HTTPS in a trusted local setup.
 
@@ -370,7 +370,7 @@ The script needs `git` and Python 3.11+. It clones the repo, then asks for the p
 Good if you already have Docker installed; ships with an Ollama embedding sidecar. The prebuilt image needs no source checkout:
 
 ```bash
-mkdir -p ~/openbiliclaw && cd ~/openbiliclaw
+mkdir -p ~/selfmirror && cd ~/selfmirror
 curl -fsSLO https://raw.githubusercontent.com/whiteguo233/OpenBiliClaw/main/docker-compose.prebuilt.yml
 docker compose -f docker-compose.prebuilt.yml up -d
 # then open http://127.0.0.1:8420/setup/ to finish initialization
@@ -425,7 +425,7 @@ curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
 macOS / Windows users can install the official app from [ollama.com/download](https://ollama.com/download). Start Ollama, then run:
 
 ```bash
-uv run openbiliclaw setup-embedding
+uv run selfmirror setup-embedding
 ```
 
 The wizard pulls `bge-m3` (~1.1GB, CPU-only is fine) and writes the config.
@@ -467,38 +467,38 @@ vim config.toml
 
 ```bash
 # One-command init (fetch history · build profile · first discovery)
-openbiliclaw init
+selfmirror init
 
 # Optional: enable local Ollama as an independent embedding provider
-openbiliclaw setup-embedding
+selfmirror setup-embedding
 
 # Manual content discovery
-openbiliclaw discover
+selfmirror discover
 
 # Optional: Douyin discovery (requires [sources.douyin]; search / hot / feed are triggered from the home page via DOM)
-openbiliclaw discover --source douyin
+selfmirror discover --source douyin
 
 # Optional: read-only Linux.do bookmarks / likes / read-history smoke (does not write memory by default)
-openbiliclaw fetch-linuxdo
+selfmirror fetch-linuxdo
 
 # Optional: formal Linux.do search / hot / feed / creator / related discovery
-openbiliclaw discover-linuxdo --limit 30
-# Equivalent: openbiliclaw discover --source linuxdo --limit 30
+selfmirror discover-linuxdo --limit 30
+# Equivalent: selfmirror discover --source linuxdo --limit 30
 
 # Optional: standalone Douyin search / hot / feed recall debugging
-openbiliclaw discover-douyin --keyword mechanical-keyboard --source search,feed --no-cache --no-evaluate
+selfmirror discover-douyin --keyword mechanical-keyboard --source search,feed --no-cache --no-evaluate
 
 # Optional: public Weibo discovery (enable [sources.weibo] first; public reads do not write profile)
-openbiliclaw discover --source weibo
-openbiliclaw discover-weibo mechanical-keyboard
-openbiliclaw discover-weibo-hot
-openbiliclaw discover-weibo-creator 1234567890
+selfmirror discover --source weibo
+selfmirror discover-weibo mechanical-keyboard
+selfmirror discover-weibo-hot
+selfmirror discover-weibo-creator 1234567890
 
 # Get recommendations
-openbiliclaw recommend
+selfmirror recommend
 
 # View user profile
-openbiliclaw profile
+selfmirror profile
 ```
 
 Developers can also build the extension from source:
@@ -513,7 +513,7 @@ npm run package
 
 ## 🤖 Integrate with OpenClaw / Hermes / WorkBuddy Agents
 
-This repo ships a [workspace skill](skills/openbiliclaw-adapter/SKILL.md) and a versioned, host-neutral Agent Bridge. Point any skill-aware or local-JSON-capable agent (OpenClaw / Hermes / WorkBuddy / Claude Code / Codex CLI / Cursor, etc.) at this checkout and it can drive your local OpenBiliClaw directly.
+This repo ships a [workspace skill](skills/selfmirror-adapter/SKILL.md) and a versioned, host-neutral Agent Bridge. Point any skill-aware or local-JSON-capable agent (OpenClaw / Hermes / WorkBuddy / Claude Code / Codex CLI / Cursor, etc.) at this checkout and it can drive your local OpenBiliClaw directly.
 
 ### What you get after integration
 
@@ -814,7 +814,7 @@ Infers from user behavior:
 
 ```
 OpenBiliClaw/
-├── src/openbiliclaw/          # Python backend core
+├── src/selfmirror/          # Python backend core
 │   ├── agent/                 # Agent orchestration & Skill system
 │   ├── soul/                  # Soul Engine (profiling · MBTI · interest/avoidance probes)
 │   ├── memory/                # Multi-layer memory system
@@ -874,7 +874,7 @@ OpenBiliClaw/
 
 ## 📜 Release History
 
-The current release is summarized in [Recent Updates](#recent-updates) above; full history lives in [docs/changelog.md](docs/changelog.md). Most users should use the `openbiliclaw-v*` aggregate [Latest Release](https://github.com/whiteguo233/OpenBiliClaw/releases/latest) for extension packages and available desktop installers; automation-channel releases remain available as `backend-v*`, `extension-v*`, and `desktop-v*`.
+The current release is summarized in [Recent Updates](#recent-updates) above; full history lives in [docs/changelog.md](docs/changelog.md). Most users should use the `selfmirror-v*` aggregate [Latest Release](https://github.com/whiteguo233/OpenBiliClaw/releases/latest) for extension packages and available desktop installers; automation-channel releases remain available as `backend-v*`, `extension-v*`, and `desktop-v*`.
 
 ## 🗺️ Roadmap
 

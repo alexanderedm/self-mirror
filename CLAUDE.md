@@ -15,7 +15,7 @@ pip install -e ".[dev]"          # Install with dev dependencies
 pytest                           # Run all tests
 pytest tests/test_foo.py         # Run single test file
 pytest tests/test_foo.py::test_bar  # Run single test
-pytest --cov=openbiliclaw        # Tests with coverage
+pytest --cov=selfmirror        # Tests with coverage
 ruff format src/ tests/          # Format code
 ruff check src/ tests/           # Lint
 mypy src/                        # Type check (strict mode)
@@ -33,12 +33,12 @@ npm run test                     # Run tests (node --test)
 ### CLI
 
 ```bash
-openbiliclaw start               # Start daemon
-openbiliclaw init                # First-time setup (fetch history + generate profile)
-openbiliclaw recommend           # Show recommendations
-openbiliclaw profile             # View user portrait
-openbiliclaw config-show         # Show current config
-openbiliclaw serve-api           # Start FastAPI server (used by Docker)
+selfmirror start               # Start daemon
+selfmirror init                # First-time setup (fetch history + generate profile)
+selfmirror recommend           # Show recommendations
+selfmirror profile             # View user portrait
+selfmirror config-show         # Show current config
+selfmirror serve-api           # Start FastAPI server (used by Docker)
 ```
 
 ### Docker
@@ -74,9 +74,9 @@ The system follows a pipeline: **Behavioral Data -> Soul Engine -> Discovery -> 
 
 - **FastAPI Backend** (`api/app.py`) - REST API on port 8420 serving the browser extension. Factory function `create_app()` initializes all components. Receives behavior events, serves recommendations, and pushes real-time cognition updates.
 
-- **Storage** (`storage/database.py`) - SQLite with vector index for semantic search. Single database at `data/openbiliclaw.db`.
+- **Storage** (`storage/database.py`) - SQLite with vector index for semantic search. Single database at `data/selfmirror.db`.
 
-- **CLI** (`cli.py`) - Typer-based. Entry point: `openbiliclaw.cli:app`.
+- **CLI** (`cli.py`) - Typer-based. Entry point: `selfmirror.cli:app`.
 
 ### Extension <-> Backend Flow
 
@@ -87,7 +87,7 @@ The Chrome extension (`extension/`) captures user behavior on bilibili.com pages
 - Template: `config.example.toml` -> copy to `config.toml` for local use
 - `config.toml` is gitignored; never commit it
 - Key sections: `[llm]` (provider + API keys), `[bilibili]` (auth), `[scheduler]` (discovery cron), `[storage]` (db path)
-- Config logic: `src/openbiliclaw/config.py` with Pydantic validation and env var overrides
+- Config logic: `src/selfmirror/config.py` with Pydantic validation and env var overrides
 
 ## Worktree Development Rule
 
@@ -105,7 +105,7 @@ prompt caching (DeepSeek 90% off / OpenAI 50% / Claude 90% / Gemini 75%
 on cached tokens) only fires when the **system message prefix is
 byte-identical across calls**. So:
 
-**Rule for every prompt builder in `src/openbiliclaw/llm/prompts.py`**:
+**Rule for every prompt builder in `src/selfmirror/llm/prompts.py`**:
 
 1. `system_prompt` MUST be 100% static — define it as a module-level
    constant `_<NAME>_SYSTEM_PROMPT` and return it as-is. **No f-strings,
@@ -123,7 +123,7 @@ byte-identical across calls**. So:
 4. Reference the system prompt's "see user message for X / Y / Z"
    contract explicitly so the LLM knows where to find each variable.
 5. Any prompt that carries the user profile MUST serialize it through a
-   named view in `src/openbiliclaw/soul/profile_views.py`
+   named view in `src/selfmirror/soul/profile_views.py`
    (`build_profile_summary` / `compact_content_prompt_profile_summary` /
    `build_query_generation_profile_summary`, or a new view added there) —
    **never hand-roll a profile serializer at the call site**. Views are
@@ -158,7 +158,7 @@ calls every covered builder with two distinct inputs and asserts the
 system message is byte-identical. Add new builders to its
 `_builder_test_inputs()` list.
 
-**Observability**: `openbiliclaw cost --by caller` shows per-caller
+**Observability**: `selfmirror cost --by caller` shows per-caller
 cache hit rate (color-coded — red if <30%, almost certainly a builder
 that broke the convention).
 

@@ -19,9 +19,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from openbiliclaw.llm.base import LLMResponse
-    from openbiliclaw.llm.service import LLMService
-    from openbiliclaw.soul.profile import OnionProfile
+    from selfmirror.llm.base import LLMResponse
+    from selfmirror.llm.service import LLMService
+    from selfmirror.soul.profile import OnionProfile
 
 logger = logging.getLogger(__name__)
 
