@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SelfMirror</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    :root {
+      --bg: #0f0f17;
+      --surface: rgba(255,255,255,0.06);
+      --surface-hover: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.10);
+      --text: #e8eaf0;
+      --text-muted: #8b90a0;
+      --blue: #60a5fa;
+      --blue-dim: rgba(96,165,250,0.15);
+      --yellow: #fbbf24;
+      --yellow-dim: rgba(251,191,36,0.15);
+      --red: #f87171;
+      --red-dim: rgba(248,113,113,0.15);
+      --green: #34d399;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      min-width: 320px; max-width: 420px;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header .logo {
+      font-size: 18px; font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header .subtitle {
+      font-size: 11px; color: var(--text-muted); margin-top: 1px;
+    }
+    .backend-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #555;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .backend-dot.ok { background: var(--green); }
+    .backend-dot.err { background: var(--red); }
+
+    /* ── Privacy Tier Buttons ── */
+    .tier-bar {
+      display: flex; gap: 6px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tier-btn {
+      flex: 1; padding: 6px 4px;
+      border: 1.5px solid transparent;
+      border-radius: 8px; cursor: pointer;
+      font-size: 12px; font-weight: 600;
+      text-align: center; transition: all 0.15s;
+      background: var(--surface); color: var(--text-muted);
+    }
+    .tier-btn .tier-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+    .tier-btn .tier-label { font-size: 10px; display: block; }
+    .tier-btn:hover { background: var(--surface-hover); }
+
+    .tier-btn.active-off { border-color: var(--blue); background: var(--blue-dim); color: var(--blue); }
+    .tier-btn.active-standard { border-color: var(--yellow); background: var(--yellow-dim); color: var(--yellow); }
+    .tier-btn.active-deep { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+
+    .gear-btn {
+      width: 34px; height: 34px; flex-shrink: 0;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--surface); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: var(--text-muted); transition: all 0.15s;
+    }
+    .gear-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 14px;
+    }
+    .tab {
+      padding: 8px 12px; font-size: 13px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; border: none;
+      background: none; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: all 0.15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ── Tab panels ── */
+    .panel { display: flex; flex-direction: column; height: calc(100vh - 130px); overflow: hidden; }
+
+    /* ── Mirror Chat ── */
+    #panel-chat { display: flex; flex-direction: column; }
+    #panel-profile { display: flex; flex-direction: column; }
+    #panel-settings { display: flex; flex-direction: column; }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5; }
+    .msg-user { align-self: flex-end; background: var(--blue-dim); color: var(--blue); border-bottom-right-radius: 4px; }
+    .msg-mirror { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 4px; }
+    .msg-system { align-self: center; background: none; color: var(--text-muted); font-size: 11px; text-align: center; }
+
+    .chat-input-row {
+      display: flex; gap: 8px; padding: 10px 14px;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 12px; font-size: 13px;
+      color: var(--text); resize: none; outline: none;
+      font-family: inherit; max-height: 80px;
+    }
+    .chat-input:focus { border-color: var(--blue); }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .chat-send {
+      width: 36px; height: 36px; flex-shrink: 0;
+      border: none; border-radius: 10px; cursor: pointer;
+      background: var(--blue); color: #fff; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s;
+    }
+    .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .mode-badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 4px;
+      margin-left: 6px; background: var(--blue-dim); color: var(--blue);
+    }
+
+    /* ── Profile Panel ── */
+    .profile-scroll { flex: 1; overflow-y: auto; padding: 14px; }
+    .profile-scroll::-webkit-scrollbar { width: 4px; }
+    .profile-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .profile-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 10px;
+    }
+    .profile-section-title {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    .profile-portrait {
+      font-size: 13px; line-height: 1.7; color: var(--text);
+      white-space: pre-wrap;
+    }
+    .trait-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .trait-chip {
+      padding: 3px 8px; border-radius: 6px; font-size: 11px;
+      background: var(--blue-dim); color: var(--blue);
+    }
+    .value-chip {
+      padding: 3px 8px; border-radius: 6px; font-size: 11px;
+      background: var(--yellow-dim); color: var(--yellow);
+    }
+    .need-chip {
+      padding: 3px 8px; border-radius: 6px; font-size: 11px;
+      background: var(--red-dim); color: var(--red);
+    }
+    .profile-meta {
+      font-size: 11px; color: var(--text-muted); margin-top: 8px;
+    }
+
+    /* ── Settings Panel ── */
+    .settings-scroll { flex: 1; overflow-y: auto; padding: 14px; }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 13px; color: var(--text); }
+    .settings-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .backend-input {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 8px; font-size: 12px;
+      color: var(--text); width: 90px; text-align: right; outline: none;
+    }
+    .backend-input:focus { border-color: var(--blue); }
+    .settings-btn {
+      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); font-size: 12px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .settings-btn:hover { background: var(--surface-hover); }
+    .settings-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .settings-btn.primary:hover { opacity: 0.85; }
+
+    .tier-detail { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--text-muted);
+    }
+    .status-bar .dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
+    .status-bar .dot.ok { background: var(--green); }
+    .init-btn {
+      margin-left: auto; padding: 3px 10px; border-radius: 6px;
+      border: 1px solid var(--blue); background: var(--blue-dim);
+      color: var(--blue); font-size: 11px; cursor: pointer;
+    }
+    .init-btn:hover { opacity: 0.8; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.85); color: #fff; padding: 8px 16px;
+      border-radius: 8px; font-size: 12px; z-index: 100;
+      pointer-events: none; transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="logo">🪞</div>
+    <div class="subtitle">對鏡問話</div>
+  </div>
+  <div class="backend-dot" id="backend-dot" title="後端連接狀態"></div>
+</div>
+
+<!-- Privacy Tier Bar -->
+<div class="tier-bar">
+  <button class="tier-btn" id="btn-off" onclick="setTier('off')">
+    <span class="tier-icon">🔵</span>
+    <span class="tier-label">安靜</span>
+  </button>
+  <button class="tier-btn active-standard" id="btn-standard" onclick="setTier('standard')">
+    <span class="tier-icon">🟡</span>
+    <span class="tier-label">標準</span>
+  </button>
+  <button class="tier-btn" id="btn-deep" onclick="setTier('deep')">
+    <span class="tier-icon">🔴</span>
+    <span class="tier-label">深度</span>
+  </button>
+  <button class="gear-btn" onclick="showSettings()" title="設置">⚙️</button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" id="tab-chat" onclick="switchTab('chat')">對話</button>
+  <button class="tab" id="tab-profile" onclick="switchTab('profile')">畫像</button>
+  <button class="tab" id="tab-settings" onclick="switchTab('settings')">設置</button>
+</div>
+
+<!-- ── Mirror Chat Panel ── -->
+<div class="panel" id="panel-chat">
+  <div class="chat-messages" id="chat-msgs">
+    <div class="msg msg-system">🪞 對鏡問話：AI 扮演你說話，幫你採訪自己的內心</div>
+  </div>
+  <div class="chat-input-row">
+    <select id="chat-mode" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:6px;">
+      <option value="free">自由模式</option>
+      <option value="guided">引導模式</option>
+    </select>
+    <textarea class="chat-input" id="chat-input" rows="1" placeholder="對鏡說話..." onkeydown="onChatKey(event)"></textarea>
+    <button class="chat-send" id="chat-send" onclick="sendChat()">➤</button>
+  </div>
+</div>
+
+<!-- ── Profile Panel ── -->
+<div class="panel" id="panel-profile" hidden>
+  <div class="profile-scroll" id="profile-content">
+    <div class="profile-section">
+      <div class="profile-section-title">🔵 隱私開關狀態</div>
+      <div id="profile-tier-status">讀取中...</div>
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">🧅 洋蔥畫像</div>
+      <div class="profile-portrait" id="profile-portrait">（尚未建立畫像）</div>
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">⭐ 核心特質</div>
+      <div class="trait-list" id="profile-traits"></div>
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">💛 價值觀</div>
+      <div class="trait-list" id="profile-values"></div>
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">❤️ 深层需求</div>
+      <div class="trait-list" id="profile-needs"></div>
+    </div>
+    <div class="profile-meta" id="profile-updated"></div>
+  </div>
+</div>
+
+<!-- ── Settings Panel ── -->
+<div class="panel" id="panel-settings" hidden>
+  <div class="settings-scroll">
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🔵 安靜模式</div>
+        <div class="tier-detail">不收集任何瀏覽數據</div>
+      </div>
+      <button class="settings-btn" id="btn-set-off" onclick="setTier('off')">開啟</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🟡 標準追蹤</div>
+        <div class="tier-detail">URL、標題、停留時間、搜尋詞</div>
+      </div>
+      <button class="settings-btn" id="btn-set-standard" onclick="setTier('standard')">開啟</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🔴 深度追蹤</div>
+        <div class="tier-detail">標準 + 活躍視窗標題</div>
+      </div>
+      <button class="settings-btn" id="btn-set-deep" onclick="setTier('deep')">開啟</button>
+    </div>
+    <div style="height:8px"></div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">後端端口</div>
+        <div class="settings-desc">SelfMirror 後端監聽端口（默認 8421）</div>
+      </div>
+      <input class="backend-input" id="backend-port" value="8421" type="number" min="1" max="65535">
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">後端主機</div>
+        <div class="settings-desc">默認 127.0.0.1</div>
+      </div>
+      <input class="backend-input" id="backend-host" value="127.0.0.1" style="text-align:right">
+    </div>
+    <div style="height:6px"></div>
+    <div class="settings-row">
+      <button class="settings-btn primary" onclick="saveBackend()">保存並重連</button>
+      <button class="settings-btn" onclick="flushEvents()">立即上報事件</button>
+    </div>
+    <div style="height:12px"></div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">掃描本地 AI 工具</div>
+        <div class="settings-desc">掃描 Claude Code / DSH / Cursor 等對話</div>
+      </div>
+      <button class="settings-btn" onclick="runInitScan()">執行 Init</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">生成初始畫像</div>
+        <div class="settings-desc">基於掃描結果生成心理畫像</div>
+      </div>
+      <button class="settings-btn primary" onclick="runInitBuild()">建立畫像</button>
+    </div>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <div class="dot" id="status-dot"></div>
+  <span id="status-text">初始化中...</span>
+  <button class="init-btn" id="init-scan-btn" onclick="runInitScan()">Init 掃描</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" hidden></div>
+
+<script src="popup-selfmirror.js"></script>
+</body>
+</html>
