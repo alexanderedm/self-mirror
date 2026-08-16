@@ -2,10 +2,30 @@
  * SelfMirror — Background Service Worker
  *
  * Simplified event collector:
- * - Listens for BEHAVIOR_EVENT from content script
- * - Buffers and flushes to /api/mirror/events
- * - Tracks current privacy tier from chrome.storage
+ * - Tracks tab URL/title changes and reports to /api/mirror/events
+ * - Three privacy tiers: off / standard / deep
+ * - Buffers events in chrome.storage.local and flushes every 30s
  */
+
+import type { BehaviorEvent } from "../shared/types.js";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface BackendEndpoint {
+  host: string;
+  port: number;
+}
+
+interface MirrorEvent {
+  event_type: string;
+  url: string;
+  title: string;
+  context: string;
+  duration_seconds: number;
+  metadata: Record<string, unknown>;
+  timestamp: number;
+}
 
 // ---------------------------------------------------------------------------
 // Storage keys
@@ -24,27 +44,33 @@ const TIER_DEEP = "deep";
 // ---------------------------------------------------------------------------
 // Backend URL helper
 // ---------------------------------------------------------------------------
-async function getBackendUrl(path) {
-  const stored = await chrome.storage.local.get(BACKEND_ENDPOINT_KEY);
-  const ep = stored[BACKEND_ENDPOINT_KEY] || { host: DEFAULT_HOST, port: DEFAULT_PORT };
+async function getBackendUrl(path: string): Promise<string> {
+  const stored = await chrome.storage.local.get<Record<string, unknown>>(BACKEND_ENDPOINT_KEY);
+  const raw = stored[BACKEND_ENDPOINT_KEY] as BackendEndpoint | undefined;
+  const ep: BackendEndpoint =
+    raw && typeof raw === "object" && "host" in raw && "port" in raw
+      ? raw
+      : { host: DEFAULT_HOST, port: DEFAULT_PORT };
   return `http://${ep.host}:${ep.port}/api${path}`;
 }
 
 // ---------------------------------------------------------------------------
 // Privacy tier
 // ---------------------------------------------------------------------------
-async function getPrivacyTier() {
-  const stored = await chrome.storage.local.get(PRIVACY_TIER_KEY);
-  return stored[PRIVACY_TIER_KEY] || TIER_STANDARD;
+async function getPrivacyTier(): Promise<string> {
+  const stored = await chrome.storage.local.get<Record<string, unknown>>(PRIVACY_TIER_KEY);
+  const val = stored[PRIVACY_TIER_KEY];
+  return typeof val === "string" ? val : TIER_STANDARD;
 }
 
-async function setPrivacyTier(tier) {
+async function setPrivacyTier(tier: string): Promise<void> {
   await chrome.storage.local.set({ [PRIVACY_TIER_KEY]: tier });
-  // Notify all tabs of tier change
   const tabs = await chrome.tabs.query({});
   for (const tab of tabs) {
     if (tab.id && !tab.url?.startsWith("chrome")) {
-      chrome.tabs.sendMessage(tab.id, { action: "TIER_CHANGED", tier }).catch(() => {});
+      chrome.tabs.sendMessage(tab.id, { action: "TIER_CHANGED", tier }).catch(() => {
+        /* tab may not have content script */
+      });
     }
   }
 }
@@ -52,18 +78,18 @@ async function setPrivacyTier(tier) {
 // ---------------------------------------------------------------------------
 // Event buffer
 // ---------------------------------------------------------------------------
-async function getBuffer() {
-  const stored = await chrome.storage.local.get(EVENT_BUFFER_KEY);
-  return stored[EVENT_BUFFER_KEY] || [];
+async function getBuffer(): Promise<MirrorEvent[]> {
+  const stored = await chrome.storage.local.get<Record<string, unknown>>(EVENT_BUFFER_KEY);
+  const val = stored[EVENT_BUFFER_KEY];
+  return (Array.isArray(val) ? val : []) as MirrorEvent[];
 }
 
-async function setBuffer(buffer) {
-  // Keep max 50 events in buffer
+async function setBuffer(buffer: MirrorEvent[]): Promise<void> {
   const trimmed = buffer.slice(-50);
   await chrome.storage.local.set({ [EVENT_BUFFER_KEY]: trimmed });
 }
 
-async function addToBuffer(event) {
+async function addToBuffer(event: MirrorEvent): Promise<void> {
   const buffer = await getBuffer();
   buffer.push(event);
   await setBuffer(buffer);
@@ -103,7 +129,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 // Track active tab for DEEP tier (window focus)
-let lastActiveTabId = null;
+let lastActiveTabId: number | null = null;
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   lastActiveTabId = activeInfo.tabId;
   const tier = await getPrivacyTier();
@@ -111,8 +137,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    if (!tab.url?.startsWith("chrome") && !tab.url?.startsWith("moz")) {
-      // DEEP tier: report active window title
+    if (tab.url && !tab.url.startsWith("chrome") && !tab.url.startsWith("moz")) {
       const buffer = await getBuffer();
       buffer.push({
         event_type: "active_window",
@@ -129,7 +154,9 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       await setBuffer(buffer);
       void flushIfNeeded();
     }
-  } catch {}
+  } catch {
+    /* tab may be inaccessible */
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -178,7 +205,7 @@ async function flushEvents() {
       const current = await getBuffer();
       await setBuffer([...events, ...current]);
     }
-  } catch (err) {
+  } catch (err: unknown) {
     // Network error — put events back
     const current = await getBuffer();
     await setBuffer([...events, ...current]);
