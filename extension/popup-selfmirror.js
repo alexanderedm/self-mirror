@@ -59,11 +59,22 @@ async function checkBackendStatus() {
       statusText.textContent = "後端已連接";
       return true;
     }
-  } catch {}
-  dot.className = "backend-dot err";
-  statusDot.className = "dot";
-  statusText.textContent = "後端未連接";
-  return false;
+    if (resp.status === 503) {
+      // Backend is reachable but not initialized — common during first startup
+      dot.className = "backend-dot ok";
+      statusDot.className = "dot ok";
+      statusText.textContent = "後端已連接（未初始化）";
+      return true;
+    }
+    // Other HTTP errors
+    statusText.textContent = `後端錯誤 (${resp.status})`;
+    return false;
+  } catch {
+    dot.className = "backend-dot err";
+    statusDot.className = "dot";
+    statusText.textContent = "後端未連接";
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
