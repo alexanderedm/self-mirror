@@ -194,19 +194,14 @@ async def mirror_chat(request: Request, input: MirrorChatIn) -> MirrorChatOut:
             profile=profile,
         )
     else:
-        from selfmirror.soul.dialogue import SocraticDialogue
+        # Guided mode — AI asks exploratory questions using MirrorDialogue in guided mode
+        from selfmirror.soul.mirror_dialogue import MirrorDialogue
 
-        ctx = _get_ctx(request)
-        socratic = SocraticDialogue(
-            llm=None,
-            soul_engine=ctx.soul_engine,
+        dialogue = MirrorDialogue(mode=input.mode)
+        reply = await dialogue.respond(
+            user_message=input.message,
             llm_service=llm,
-            session="self_mirror_guided",
-            learning_mode="legacy_direct",
-        )
-        reply = await socratic.respond(
-            input.message,
-            scope="chat",
+            profile=profile,
         )
 
     return MirrorChatOut(

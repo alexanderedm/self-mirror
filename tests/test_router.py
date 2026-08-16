@@ -224,9 +224,24 @@ class TestMirrorChatEndpoint:
         assert "reply" in data
         assert data["mode"] == "free"
 
-    @pytest.mark.skip(reason="guided mode requires selfmirror.soul.dialogue (not yet implemented)")
     def test_chat_guided_mode_response_shape(self) -> None:
-        ...  # Guided mode uses SocraticDialogue from selfmirror.soul.dialogue
+        # Guided mode now uses MirrorDialogue (same as free mode, different system prompt)
+        ctx = FakeRuntimeContext()
+        mock_response = MagicMock()
+        mock_response.content = "你最近在探索什麼方向？"
+
+        async def fake_complete(user_message, history, caller, **kwargs):
+            return mock_response
+
+        ctx.llm_service.complete_socratic_dialogue = fake_complete
+
+        app = make_app(ctx=ctx)
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.post("/api/mirror/chat", json={"message": "test", "mode": "guided"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["mode"] == "guided"
+        assert "reply" in data
 
 
 # -------------------------------------------------------------------
