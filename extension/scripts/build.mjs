@@ -113,6 +113,13 @@ const entrypoints = [
   },
 ];
 
+// SelfMirror service worker entrypoint — must be added before the build loop
+entrypoints.push({
+  entry: resolve(root, "src/background/selfmirror-sw.ts"),
+  outfile: resolve(root, `${outDir}/background/selfmirror-sw.js`),
+});
+console.log("📁 Added SelfMirror service worker entrypoint");
+
 // Safari has no MAIN-world content scripts, so a dedicated content script
 // injects the main/*.js tap bundles into the page context as <script> tags.
 // It is only built for Safari so Chrome/Firefox dist layouts stay unchanged.
@@ -168,13 +175,6 @@ for (const target of entrypoints) {
     footer: { js: "null;" },
   });
 }
-
-// SelfMirror service worker entrypoint
-entrypoints.push({
-  entry: resolve(root, "src/background/selfmirror-sw.ts"),
-  outfile: resolve(root, `${outDir}/background/selfmirror-sw.js`),
-});
-console.log("📁 Added SelfMirror service worker entrypoint");
 
 // For Firefox/Safari builds, write the target manifest with version injected
 // from the Chrome manifest (single source of truth), and stage popup/icons.
